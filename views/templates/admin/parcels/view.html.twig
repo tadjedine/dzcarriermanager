@@ -1,0 +1,213 @@
+{#
+  DZ Carrier Manager — Parcel Detail View
+  Shows full order + parcel info with status timeline.
+#}
+
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+    <div class="row">
+        {# ── Left column: Order & Parcel Info ─────────── #}
+        <div class="col-lg-8">
+            {# Order info card #}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-header-title">
+                        <i class="material-icons">shopping_cart</i>
+                        {{ 'Order #%id%'|trans({'%id%': order.id_order}, 'Modules.Dzcarriermanager.Admin') }}
+                        <span class="badge ms-2" style="font-size:0.8em">{{ order.reference }}</span>
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>{{ 'Customer'|trans({}, 'Admin.Global') }}:</strong> {{ order.customer_name }}</p>
+                            <p><strong>{{ 'Email'|trans({}, 'Admin.Global') }}:</strong> {{ order.customer_email }}</p>
+                            <p><strong>{{ 'Phone'|trans({}, 'Admin.Global') }}:</strong> {{ order.phone ?: order.phone_mobile }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>{{ 'Address'|trans({}, 'Admin.Global') }}:</strong>
+                                {{ order.address1 }}{% if order.address2 %}, {{ order.address2 }}{% endif %}
+                            </p>
+                            <p><strong>{{ 'City'|trans({}, 'Admin.Global') }}:</strong> {{ order.city }}</p>
+                            <p><strong>{{ 'Wilaya'|trans({}, 'Modules.Dzcarriermanager.Admin') }}:</strong> {{ order.wilaya }}</p>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <p>
+                        <strong>{{ 'Total'|trans({}, 'Admin.Global') }}:</strong>
+                        {{ order.total_paid_tax_incl }} {{ order.id_currency == 1 ? 'DZD' : '' }}
+                    </p>
+                    <p>
+                        <strong>{{ 'Date'|trans({}, 'Admin.Global') }}:</strong>
+                        {{ order.date_add }}
+                    </p>
+                </div>
+            </div>
+
+            {# Products card #}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-header-title">
+                        <i class="material-icons">inventory_2</i>
+                        {{ 'Products'|trans({}, 'Admin.Global') }}
+                    </h3>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>{{ 'Product'|trans({}, 'Admin.Global') }}</th>
+                                <th class="text-center">{{ 'Qty'|trans({}, 'Admin.Global') }}</th>
+                                <th class="text-end">{{ 'Total'|trans({}, 'Admin.Global') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>{{ product.product_name }}</td>
+                                <td class="text-center">{{ product.product_quantity }}</td>
+                                <td class="text-end">{{ product.total_price_tax_incl }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            {# Parcel info card (only if parcel exists) #}
+            {% if parcel %}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-header-title">
+                        <i class="material-icons">local_shipping</i>
+                        {{ 'Parcel Details'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p>
+                                <strong>{{ 'Tracking'|trans({}, 'Modules.Dzcarriermanager.Admin') }}:</strong>
+                                {% if parcel.tracking %}
+                                    <code>{{ parcel.tracking }}</code>
+                                {% else %}
+                                    <span class="text-muted">{{ 'Not yet dispatched'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</span>
+                                {% endif %}
+                            </p>
+                            <p><strong>{{ 'Carrier'|trans({}, 'Admin.Global') }}:</strong> {{ parcel.carrier_name|default('—') }}</p>
+                            <p><strong>{{ 'Delivery Type'|trans({}, 'Modules.Dzcarriermanager.Admin') }}:</strong> {{ parcel.delivery_type|default('—') }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>{{ 'Delivery Fee'|trans({}, 'Modules.Dzcarriermanager.Admin') }}:</strong> {{ parcel.delivery_fee }} DZD</p>
+                            <p><strong>{{ 'Free Shipping'|trans({}, 'Modules.Dzcarriermanager.Admin') }}:</strong> {{ parcel.freeshipping ? 'Yes' : 'No' }}</p>
+                            <p><strong>{{ 'Weight'|trans({}, 'Admin.Global') }}:</strong> {{ parcel.weight }} kg</p>
+                        </div>
+                    </div>
+
+                    {% if parcel.label_url %}
+                    <div class="mt-2">
+                        <a href="{{ parcel.label_url }}" target="_blank" class="btn btn-outline-primary btn-sm">
+                            <i class="material-icons">print</i>
+                            {{ 'Download Label'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        {# ── Right column: Status & Timeline ──────────── #}
+        <div class="col-lg-4">
+            {# Current status card #}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-header-title">
+                        <i class="material-icons">info</i>
+                        {{ 'Status'|trans({}, 'Admin.Global') }}
+                    </h3>
+                </div>
+                <div class="card-body text-center">
+                    <span class="dzcm-status-badge dzcm-phase-{{ statusPhase }}" style="font-size:1.1em;padding:8px 16px">
+                        {{ statusLabel }}
+                    </span>
+                </div>
+            </div>
+
+            {# Actions card #}
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h3 class="card-header-title">
+                        <i class="material-icons">bolt</i>
+                        {{ 'Actions'|trans({}, 'Admin.Global') }}
+                    </h3>
+                </div>
+                <div class="card-body d-grid gap-2">
+                    {% if not parcel %}
+                        <form method="POST" action="{{ path('ps_dzcarriermanager_parcel_confirm', {orderId: order.id_order}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('confirm') }}">
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="material-icons">check_circle</i>
+                                {{ 'Confirm Order'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                            </button>
+                        </form>
+                    {% elseif parcel.status == 'confirmed' %}
+                        <form method="POST" action="{{ path('ps_dzcarriermanager_parcel_send', {orderId: order.id_order}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('send') }}">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="material-icons">local_shipping</i>
+                                {{ 'Send to Carrier'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    <a href="{{ path('admin_orders_view', {orderId: order.id_order}) }}" class="btn btn-outline-secondary w-100">
+                        <i class="material-icons">open_in_new</i>
+                        {{ 'View PS Order'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                    </a>
+
+                    <a href="{{ path('ps_dzcarriermanager_parcel_index') }}" class="btn btn-outline-secondary w-100">
+                        <i class="material-icons">arrow_back</i>
+                        {{ 'Back to Parcels'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                    </a>
+                </div>
+            </div>
+
+            {# Status timeline #}
+            {% if history|length > 0 %}
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-header-title">
+                        <i class="material-icons">timeline</i>
+                        {{ 'Status History'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="dzcm-timeline">
+                        {% for entry in history %}
+                        <div class="dzcm-timeline-item">
+                            <div class="dzcm-timeline-dot"></div>
+                            <div class="dzcm-timeline-content">
+                                <strong>{{ entry.status }}</strong>
+                                {% if entry.reason %}
+                                    <br><small class="text-muted">{{ entry.reason }}</small>
+                                {% endif %}
+                                <br><small class="text-muted">{{ entry.occurred_at }}</small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('../modules/dzcarriermanager/views/css/dzcarriermanager.css') }}">
+{% endblock %}

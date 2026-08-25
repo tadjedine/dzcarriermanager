@@ -1,0 +1,38 @@
+{#
+  DZ Carrier Manager — Parcels Grid Page
+  Shows all PS orders with their carrier/parcel status.
+#}
+
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+    {# ── Status summary cards ─────────────────────────── #}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex gap-2 flex-wrap" id="dzcm-status-pills">
+                <span class="badge rounded-pill bg-secondary px-3 py-2">
+                    <i class="material-icons" style="font-size:14px;vertical-align:middle">help_outline</i>
+                    {{ 'All Orders'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {# ── Main grid ────────────────────────────────────── #}
+    <div class="row">
+        <div class="col">
+            {% include '@PrestaShop/Admin/Common/Grid/grid_panel.html.twig' with {'grid': parcelGrid} %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('../modules/dzcarriermanager/views/css/dzcarriermanager.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('themes/default/js/bundle/pagination.js') }}"></script>
+    <script src="{{ asset('../modules/dzcarriermanager/views/js/parcels.js') }}"></script>
+{% endblock %}

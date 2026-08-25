@@ -1,0 +1,68 @@
+# DZ Carrier Manager — Route definitions
+# @see https://devdocs.prestashop-project.org/9/modules/concepts/controllers/admin-controllers/
+
+# ══════════════════════════════════════════════════════════════════
+#  PARCELS
+# ══════════════════════════════════════════════════════════════════
+
+ps_dzcarriermanager_parcel_index:
+    path: /dz-carrier-manager/parcels
+    methods: [GET]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::indexAction'
+        _legacy_controller: 'AdminDzCarrierManagerParcels'
+        _legacy_link: 'AdminDzCarrierManagerParcels'
+
+ps_dzcarriermanager_parcel_search:
+    path: /dz-carrier-manager/parcels
+    methods: [POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::searchAction'
+        _legacy_controller: 'AdminDzCarrierManagerParcels'
+        _legacy_link: 'AdminDzCarrierManagerParcels:search'
+
+ps_dzcarriermanager_parcel_confirm:
+    path: /dz-carrier-manager/parcels/{orderId}/confirm
+    methods: [POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::confirmAction'
+        _legacy_controller: 'AdminDzCarrierManagerParcels'
+        _legacy_link: 'AdminDzCarrierManagerParcels:confirm'
+    requirements:
+        orderId: \d+
+
+ps_dzcarriermanager_parcel_bulk_confirm:
+    path: /dz-carrier-manager/parcels/bulk-confirm
+    methods: [POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::confirmBulkAction'
+        _legacy_controller: 'AdminDzCarrierManagerParcels'
+        _legacy_link: 'AdminDzCarrierManagerParcels:bulkconfirm'
+
+ps_dzcarriermanager_parcel_send:
+    path: /dz-carrier-manager/parcels/{orderId}/send
+    methods: [POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::sendToCarrierAction'
+        _legacy_controller: 'AdminDzCarrierManagerParcels'
+        _legacy_link: 'AdminDzCarrierManagerParcels:send'
+    requirements:
+        orderId: \d+
+
+ps_dzcarriermanager_parcel_bulk_send:
+    path: /dz-carrier-manager/parcels/bulk-send
+    methods: [POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::sendBulkToCarrierAction'
+        _legacy_controller: 'AdminDzCarrierManagerParcels'
+        _legacy_link: 'AdminDzCarrierManagerParcels:bulksend'
+
+ps_dzcarriermanager_parcel_view:
+    path: /dz-carrier-manager/parcels/{orderId}
+    methods: [GET]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::viewAction'
+        _legacy_controller: 'AdminDzCarrierManagerParcels'
+        _legacy_link: 'AdminDzCarrierManagerParcels:view'
+    requirements:
+        orderId: \d+

@@ -1,0 +1,22 @@
+{
+    "name": "prestashop/dzcarriermanager",
+    "description": "PrestaShop module for managing Algerian carrier integrations (Guepex, etc.)",
+    "license": "AFL-3.0",
+    "authors": [
+        {
+            "name": "DZ Carrier Manager"
+        }
+    ],
+    "require": {
+        "php": ">=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Module\\DzCarrierManager\\": "src/"
+        }
+    },
+    "config": {
+        "prepend-autoloader": false
+    },
+    "type": "prestashop-module"
+}
