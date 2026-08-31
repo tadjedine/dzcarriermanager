@@ -59,6 +59,31 @@
 }
 
 
+/* ── Delivery type badges ─────────────────────────────────────── */
+
+.dzcm-delivery-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.76rem;
+    font-weight: 500;
+    white-space: nowrap;
+    line-height: 1.4;
+}
+
+.dzcm-delivery-home {
+    background-color: #ecfdf5;
+    color: #047857;
+    border: 1px solid #6ee7b7;
+}
+
+.dzcm-delivery-stopdesk {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fbbf24;
+}
+
+
 /* ── Status summary pills (index page top) ────────────────────── */
 
 #dzcm-status-pills .badge {

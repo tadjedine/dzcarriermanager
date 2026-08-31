@@ -94,6 +94,13 @@ class ParcelGridDefinitionFactory extends AbstractGridDefinitionFactory
                     ])
             )
             ->add(
+                (new DataColumn('delivery_type'))
+                    ->setName($this->trans('Delivery', [], 'Modules.Dzcarriermanager.Admin'))
+                    ->setOptions([
+                        'field' => 'delivery_type',
+                    ])
+            )
+            ->add(
                 (new DataColumn('parcel_status'))
                     ->setName($this->trans('Status', [], 'Admin.Global'))
                     ->setOptions([
@@ -154,7 +161,7 @@ class ParcelGridDefinitionFactory extends AbstractGridDefinitionFactory
                 (new Filter('parcel_status', ChoiceType::class))
                     ->setTypeOptions([
                         'required' => false,
-                        'placeholder' => $this->trans('All statuses', [], 'Modules.Dzcarriermanager.Admin'),
+                        'placeholder' => $this->trans('All', [], 'Admin.Global'),
                         'choices' => [
                             $this->trans('Not Confirmed', [], 'Modules.Dzcarriermanager.Admin') => 'not_confirmed',
                             $this->trans('Confirmed', [], 'Modules.Dzcarriermanager.Admin') => 'confirmed',

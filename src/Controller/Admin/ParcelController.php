@@ -322,12 +322,12 @@ class ParcelController extends PrestaShopAdminController
         }
 
         // Check if already has a parcel row
-        $existingParcel = $this->connection->fetchOne(
-            "SELECT id FROM {$prefix}cm_parcels WHERE order_id = :orderId",
+        $existingParcel = $this->connection->fetchAssociative(
+            "SELECT id, status FROM {$prefix}cm_parcels WHERE order_id = :orderId",
             ['orderId' => $orderId]
         );
 
-        if ($existingParcel) {
+        if ($existingParcel && $existingParcel['status'] !== 'not_confirmed') {
             throw new \RuntimeException(
                 $this->trans('Order #%id% is already confirmed or dispatched.', ['%id%' => $orderId], 'Modules.Dzcarriermanager.Admin')
             );
@@ -339,13 +339,23 @@ class ParcelController extends PrestaShopAdminController
             ['id' => $orderId]
         );
 
-        $this->connection->insert($prefix . 'cm_parcels', [
-            'order_id' => $orderId,
-            'status' => 'confirmed',
-            'price' => (int) round((float) $orderTotal),
-            'created_at' => date('Y-m-d H:i:s'),
-            'updated_at' => date('Y-m-d H:i:s'),
-        ]);
+        if ($existingParcel) {
+            // Update pre-existing not_confirmed parcel (from website order)
+            $this->connection->update($prefix . 'cm_parcels', [
+                'status' => 'confirmed',
+                'price' => (int) round((float) $orderTotal),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ], ['order_id' => $orderId]);
+        } else {
+            // Insert new parcel row (PS-native order)
+            $this->connection->insert($prefix . 'cm_parcels', [
+                'order_id' => $orderId,
+                'status' => 'confirmed',
+                'price' => (int) round((float) $orderTotal),
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
     }
 
     /**
@@ -475,6 +485,12 @@ class ParcelController extends PrestaShopAdminController
             throw new \RuntimeException("Order #{$orderId} not found.");
         }
 
+        // Fetch pre-filled delivery details from cm_parcels if available
+        $parcel = $this->connection->fetchAssociative(
+            "SELECT * FROM {$prefix}cm_parcels WHERE order_id = :orderId",
+            ['orderId' => $orderId]
+        );
+
         // Build product list string
         $products = $this->connection->fetchAllAssociative(
             "SELECT product_name, product_quantity
@@ -496,20 +512,42 @@ class ParcelController extends PrestaShopAdminController
             ['id' => $orderId]
         );
 
+        $phone = ($parcel && !empty($parcel['phone']))
+            ? $parcel['phone']
+            : ($data['phone'] ?: $data['phone_mobile']);
+
+        $wilayaName = ($parcel && !empty($parcel['wilaya_name']))
+            ? $parcel['wilaya_name']
+            : ($data['wilaya_name'] ?? '');
+
+        $communeName = ($parcel && !empty($parcel['commune_name']))
+            ? $parcel['commune_name']
+            : ($data['city'] ?? '');
+
+        $deliveryType = ($parcel && !empty($parcel['delivery_type']))
+            ? $parcel['delivery_type']
+            : 'express_home';
+
+        $centerId = ($parcel && !empty($parcel['center_id']))
+            ? (int) $parcel['center_id']
+            : null;
+
         return [
             'order_id' => $orderId,
             'firstname' => $data['firstname'],
             'lastname' => $data['lastname'],
-            'phone' => $data['phone'] ?: $data['phone_mobile'],
+            'phone' => $phone,
             'address' => trim($data['address1'] . ' ' . ($data['address2'] ?? '')),
-            'commune_name' => $data['city'] ?? '',
-            'wilaya_name' => $data['wilaya_name'] ?? '',
+            'commune_name' => $communeName,
+            'wilaya_name' => $wilayaName,
             'product_list' => $productList ?: 'Commande #' . $orderId,
             'price' => (int) round((float) $data['total_paid_tax_incl']),
             'weight' => max(1.0, (float) $totalWeight),
             'shipping_cost' => (int) round((float) ($data['total_shipping_tax_incl'] ?? 0)),
             'freeshipping' => ((float) ($data['total_shipping_tax_incl'] ?? 0)) == 0,
-            'delivery_type' => 'express_home',  // Default; can be enhanced later
+            'delivery_type' => $deliveryType,
+            'center_id' => $centerId,
+            'stopdesk_id' => $centerId,
         ];
     }
 

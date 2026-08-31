@@ -46,6 +46,7 @@ class ParcelQueryBuilder extends AbstractDoctrineQueryBuilder
             'p.id AS parcel_id',
             'p.tracking',
             'p.carrier_account_id',
+            'COALESCE(p.delivery_type, \'home\') AS delivery_type',
             'COALESCE(p.status, \'not_confirmed\') AS parcel_status'
         );
 
@@ -122,8 +123,9 @@ class ParcelQueryBuilder extends AbstractDoctrineQueryBuilder
     {
         switch ($value) {
             case 'not_confirmed':
-                // Orders with no parcel row
-                $qb->andWhere('p.id IS NULL');
+                // Orders with no parcel row or with status not_confirmed
+                $qb->andWhere('(p.id IS NULL OR p.status = :not_confirmed)')
+                    ->setParameter('not_confirmed', 'not_confirmed');
                 break;
 
             case 'confirmed':

@@ -1,22 +1,53 @@
 /**
- * DZ Carrier Manager — Parcels grid enhancements.
+ * DZ Carrier Manager — Parcels grid initialization & enhancements.
  *
- * Handles:
- * - Applying status badge styles after grid renders
- * - Grid interactions (sorting, pagination are handled by PS core)
+ * CRITICAL: The Grid component init call below is required for PS9's
+ * built-in grid features to work: SubmitRowAction (confirm/send buttons),
+ * BulkActionCheckbox, Sorting, Pagination, etc.
  */
 document.addEventListener('DOMContentLoaded', function () {
+    // Initialize PS9 grid component — enables row actions, bulk actions, sorting
+    window.prestashop.component.initComponents(['Grid']);
+
+    // Apply our custom badge styles
     applyStatusBadges();
+    applyDeliveryTypeBadges();
 
     // Re-apply after grid refreshes (PS grid uses pagination.js)
     const gridPanel = document.querySelector('.grid-panel');
     if (gridPanel) {
         const observer = new MutationObserver(function () {
             applyStatusBadges();
+            applyDeliveryTypeBadges();
         });
         observer.observe(gridPanel, { childList: true, subtree: true });
     }
 });
+
+/**
+ * Find all cells in the "delivery_type" column and render
+ * a small icon + label badge for Home / Stop Desk.
+ */
+function applyDeliveryTypeBadges() {
+    const cells = document.querySelectorAll('td.column-delivery_type');
+
+    cells.forEach(function (cell) {
+        const raw = cell.textContent.trim().toLowerCase();
+        if (!raw || cell.querySelector('.dzcm-delivery-badge')) {
+            return;
+        }
+
+        const isStopDesk = raw === 'stop_desk' || raw === 'stop desk' || raw === 'stopdesk';
+        const label = isStopDesk ? '📦 Stop Desk' : '🏠 Home';
+        const cls = isStopDesk ? 'dzcm-delivery-stopdesk' : 'dzcm-delivery-home';
+
+        cell.textContent = '';
+        const badge = document.createElement('span');
+        badge.className = 'dzcm-delivery-badge ' + cls;
+        badge.textContent = label;
+        cell.appendChild(badge);
+    });
+}
 
 /**
  * Find all cells in the "parcel_status" column and wrap the text
