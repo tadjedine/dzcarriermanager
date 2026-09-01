@@ -1,0 +1,133 @@
+{#
+  DZ Carrier Manager — Edit Carrier Account Form
+#}
+
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+<div class="row justify-content-center">
+        <div class="col-lg-8">
+            <form method="POST" action="{{ path('ps_dzcarriermanager_carrier_edit', {id: account.id}) }}" id="dzcm-carrier-form">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-header-title">
+                        <i class="material-icons">local_shipping</i>
+                        {{ 'Edit Carrier Configuration — %name%'|trans({'%name%': account.display_name}, 'Modules.Dzcarriermanager.Admin') }}
+                    </h3>
+                </div>
+                <div class="card-body">
+                    {# Display Name #}
+                    <div class="mb-3">
+                        <label for="display_name" class="form-label fw-bold">{{ 'Display Name'|trans({}, 'Admin.Global') }}</label>
+                        <input type="text" class="form-control" id="display_name" name="display_name" value="{{ account.display_name }}" required>
+                        <div class="form-text">{{ 'Carrier label displayed in the back office.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                    </div>
+
+                    {# Carrier Code (readonly) #}
+                    <div class="mb-3">
+                        <label for="carrier_code" class="form-label fw-bold">{{ 'Carrier Code'|trans({}, 'Admin.Global') }}</label>
+                        <input type="text" class="form-control bg-light" id="carrier_code" value="{{ account.carrier_code }}" readonly>
+                    </div>
+
+                    <hr class="my-4">
+                    <h4 class="mb-3 text-primary"><i class="material-icons" style="font-size:18px">vpn_key</i> {{ 'API Credentials'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</h4>
+
+                    {# API ID #}
+                    <div class="mb-3">
+                        <label for="api_id" class="form-label fw-bold">{{ 'API ID'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</label>
+                        <input type="text" class="form-control" id="api_id" name="api_id" value="{{ account.api_id }}" placeholder="e.g. 564897213">
+                        <div class="form-text">{{ 'Your API identifier provided by the carrier.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                    </div>
+
+                    {# API Token #}
+                    <div class="mb-3">
+                        <label for="api_token" class="form-label fw-bold">{{ 'API Token'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</label>
+                        <input type="password" class="form-control" id="api_token" name="api_token" value="{{ account.api_token }}" placeholder="{{ account.api_token ? '••••••••••••••••' : 'Enter API token' }}">
+                        <div class="form-text">{{ 'Your secret API token. Leave untouched if unchanged.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h4 class="mb-3 text-primary"><i class="material-icons" style="font-size:18px">sync_alt</i> {{ 'Webhooks & Notifications'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</h4>
+
+                    {# Webhook Secret Key #}
+                    <div class="mb-3">
+                        <label for="webhook_secret" class="form-label fw-bold">{{ 'Webhook Secret Key'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</label>
+                        <input type="text" class="form-control" id="webhook_secret" name="webhook_secret" value="{{ account.webhook_secret }}" placeholder="Secret key from carrier dashboard">
+                        <div class="form-text">{{ 'Used to verify HMAC-SHA256 signatures for incoming event webhooks.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                    </div>
+
+                    {# Webhook URL (Readonly with Copy Button) #}
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">{{ 'Webhook Reception URL'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control bg-light" id="dzcm-webhook-url" value="{{ webhookUrl }}" readonly>
+                            <button class="btn btn-outline-secondary" type="button" id="dzcm-copy-webhook-btn">
+                                <i class="material-icons" style="font-size:16px">content_copy</i> {{ 'Copy'|trans({}, 'Admin.Actions') }}
+                            </button>
+                        </div>
+                        <div class="form-text">{{ 'Register this URL in your carrier developer dashboard (or through ngrok for local development).'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                    </div>
+
+                    <hr class="my-4">
+                    <h4 class="mb-3 text-primary"><i class="material-icons" style="font-size:18px">tune</i> {{ 'Carrier Settings'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</h4>
+
+                    {# Sender Wilaya (from_wilaya_id) #}
+                    <div class="mb-3">
+                        <label for="from_wilaya_id" class="form-label fw-bold">{{ 'Sender Wilaya Code'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</label>
+                        <input type="number" class="form-control" id="from_wilaya_id" name="from_wilaya_id" value="{{ extraConfig.from_wilaya_id|default(16) }}" min="1" max="58">
+                        <div class="form-text">{{ 'Default sender wilaya code (e.g. 16 for Alger).'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                    </div>
+
+                    {# Base URL #}
+                    <div class="mb-3">
+                        <label for="base_url" class="form-label fw-bold">{{ 'API Base URL'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</label>
+                        <input type="url" class="form-control" id="base_url" name="base_url" value="{{ extraConfig.base_url|default('https://api.guepex.app/v1') }}">
+                    </div>
+
+                    <hr class="my-4">
+
+                    {# Status Toggles #}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1" {{ account.is_active ? 'checked' : '' }}>
+                                <label class="form-check-label fw-bold" for="is_active">{{ 'Active'|trans({}, 'Admin.Global') }}</label>
+                                <div class="form-text">{{ 'Enable or disable this carrier integration.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="is_default" name="is_default" value="1" {{ account.is_default ? 'checked' : '' }}>
+                                <label class="form-check-label fw-bold" for="is_default">{{ 'Default Carrier'|trans({}, 'Admin.Global') }}</label>
+                                <div class="form-text">{{ 'Use this carrier by default when sending parcels.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {# Connection Test Box #}
+                    <div id="dzcm-test-result" class="alert d-none mt-3" role="alert"></div>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    <button type="button" class="btn btn-outline-info" id="dzcm-btn-test-connection" data-test-url="{{ path('ps_dzcarriermanager_carrier_test', {id: account.id}) }}">
+                        <i class="material-icons" style="font-size:16px">network_check</i> {{ 'Test API Connection'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                    </button>
+                    <div>
+                        <a href="{{ path('ps_dzcarriermanager_carrier_index') }}" class="btn btn-outline-secondary me-2">
+                            {{ 'Cancel'|trans({}, 'Admin.Actions') }}
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="material-icons" style="font-size:16px">save</i> {{ 'Save'|trans({}, 'Admin.Actions') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('../modules/dzcarriermanager/views/js/carriers.js') }}"></script>
+{% endblock %}

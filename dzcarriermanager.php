@@ -41,10 +41,24 @@ class dzcarriermanager extends Module
 
         // Register BO tabs under Shipping
         // @see https://devdocs.prestashop-project.org/9/modules/concepts/controllers/admin-controllers/tabs/
-        $tabNames = [];
+        $mainTabNames = [];
+        $parcelsTabNames = [];
+        $carriersTabNames = [];
         foreach (Language::getLanguages(true) as $lang) {
-            $tabNames[$lang['locale']] = $this->trans(
+            $mainTabNames[$lang['locale']] = $this->trans(
                 'DZ Carrier Manager',
+                [],
+                'Modules.Dzcarriermanager.Admin',
+                $lang['locale']
+            );
+            $parcelsTabNames[$lang['locale']] = $this->trans(
+                'Parcels',
+                [],
+                'Modules.Dzcarriermanager.Admin',
+                $lang['locale']
+            );
+            $carriersTabNames[$lang['locale']] = $this->trans(
+                'My Carriers',
                 [],
                 'Modules.Dzcarriermanager.Admin',
                 $lang['locale']
@@ -53,23 +67,40 @@ class dzcarriermanager extends Module
 
         $this->tabs = [
             [
+                'class_name' => 'AdminDzCarrierManager',
+                'visible' => true,
+                'name' => $mainTabNames,
+                'icon' => 'local_shipping',
+                'parent_class_name' => 'AdminParentShipping',
+            ],
+            [
                 'route_name' => 'ps_dzcarriermanager_parcel_index',
                 'class_name' => 'AdminDzCarrierManagerParcels',
                 'visible' => true,
-                'name' => $tabNames,
+                'name' => $parcelsTabNames,
                 'icon' => 'local_shipping',
-                'parent_class_name' => 'AdminParentShipping',
+                'parent_class_name' => 'AdminDzCarrierManager',
+            ],
+            [
+                'route_name' => 'ps_dzcarriermanager_carrier_index',
+                'class_name' => 'AdminDzCarrierManagerCarriers',
+                'visible' => true,
+                'name' => $carriersTabNames,
+                'icon' => 'tune',
+                'parent_class_name' => 'AdminDzCarrierManager',
             ],
         ];
     }
 
     /**
-     * Module installation: create DB tables and seed default carrier.
+     * Module installation: create DB tables, register hooks, and seed default carrier.
      */
     public function install(): bool
     {
         return $this->installTables()
             && parent::install()
+            && $this->registerHook('displayAdminOrderTabLink')
+            && $this->registerHook('displayAdminOrderTabContent')
             && $this->seedDefaultCarriers();
     }
 
@@ -79,6 +110,89 @@ class dzcarriermanager extends Module
     public function uninstall(): bool
     {
         return $this->removeTables() && parent::uninstall();
+    }
+
+    /**
+     * Hook: display tab link on PS order detail page.
+     */
+    public function hookDisplayAdminOrderTabLink(array $params): string
+    {
+        $orderId = (int) ($params['id_order'] ?? 0);
+        if ($orderId <= 0) {
+            return '';
+        }
+
+        $db = Db::getInstance();
+        $prefix = _DB_PREFIX_;
+        $parcel = $db->getRow('SELECT tracking, status FROM `' . $prefix . 'cm_parcels` WHERE `order_id` = ' . $orderId);
+
+        try {
+            return $this->get('twig')->render(
+                '@Modules/dzcarriermanager/views/templates/admin/hooks/order_tab_link.html.twig',
+                [
+                    'parcel' => $parcel,
+                    'orderId' => $orderId,
+                ]
+            );
+        } catch (\Throwable $e) {
+            return '';
+        }
+    }
+
+    /**
+     * Hook: display tab content on PS order detail page.
+     */
+    public function hookDisplayAdminOrderTabContent(array $params): string
+    {
+        $orderId = (int) ($params['id_order'] ?? 0);
+        if ($orderId <= 0) {
+            return '';
+        }
+
+        $db = Db::getInstance();
+        $prefix = _DB_PREFIX_;
+
+        $order = $db->getRow(
+            'SELECT o.id_order, o.reference, a.city, s.name AS wilaya
+             FROM `' . $prefix . 'orders` o
+             LEFT JOIN `' . $prefix . 'address` a ON o.id_address_delivery = a.id_address
+             LEFT JOIN `' . $prefix . 'state` s ON a.id_state = s.id_state
+             WHERE o.id_order = ' . $orderId
+        );
+
+        $parcel = $db->getRow(
+            'SELECT p.*, ca.display_name AS carrier_name
+             FROM `' . $prefix . 'cm_parcels` p
+             LEFT JOIN `' . $prefix . 'cm_carrier_accounts` ca ON p.carrier_account_id = ca.id
+             WHERE p.order_id = ' . $orderId
+        );
+
+        $history = [];
+        if ($parcel) {
+            $history = $db->executeS(
+                'SELECT * FROM `' . $prefix . 'cm_parcel_histories` WHERE `parcel_id` = ' . (int) $parcel['id'] . ' ORDER BY `occurred_at` DESC'
+            );
+        }
+
+        try {
+            return $this->get('twig')->render(
+                '@Modules/dzcarriermanager/views/templates/admin/hooks/order_tab_content.html.twig',
+                [
+                    'orderId' => $orderId,
+                    'order' => $order ?: [],
+                    'parcel' => $parcel,
+                    'history' => $history ?: [],
+                    'statusLabel' => $parcel
+                        ? \Module\DzCarrierManager\Carrier\Guepex\GuepexParcelStatus::label($parcel['status'])
+                        : 'Not Confirmed',
+                    'statusPhase' => $parcel
+                        ? \Module\DzCarrierManager\Carrier\Guepex\GuepexParcelStatus::phase($parcel['status'])
+                        : 'pending',
+                ]
+            );
+        } catch (\Throwable $e) {
+            return '';
+        }
     }
 
     /**
@@ -179,3 +293,4 @@ class dzcarriermanager extends Module
         return $installer;
     }
 }
+

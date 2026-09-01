@@ -17,17 +17,18 @@ services:
             - '%database_prefix%'
 
     # ══════════════════════════════════════════════════════════════
-    #  CARRIER ABSTRACTION
+    #  CARRIER ABSTRACTION & WEBHOOKS
     # ══════════════════════════════════════════════════════════════
 
     Module\DzCarrierManager\Carrier\Guepex\GuepexCarrier: ~
+    Module\DzCarrierManager\Carrier\Guepex\GuepexWebhookHandler: ~
 
     Module\DzCarrierManager\Carrier\CarrierRegistry:
         calls:
             - [register, ['@Module\DzCarrierManager\Carrier\Guepex\GuepexCarrier']]
 
     # ══════════════════════════════════════════════════════════════
-    #  CONTROLLER
+    #  CONTROLLERS
     # ══════════════════════════════════════════════════════════════
 
     Module\DzCarrierManager\Controller\Admin\ParcelController:
@@ -36,8 +37,14 @@ services:
             - '@Module\DzCarrierManager\Carrier\CarrierRegistry'
         tags: ['controller.service_arguments']
 
+    Module\DzCarrierManager\Controller\Admin\CarrierAccountController:
+        arguments:
+            - '@doctrine.dbal.default_connection'
+            - '@Module\DzCarrierManager\Carrier\CarrierRegistry'
+        tags: ['controller.service_arguments']
+
     # ══════════════════════════════════════════════════════════════
-    #  GRID — Definition, Query Builder, Data Provider, Factory
+    #  GRID — Parcels
     # ══════════════════════════════════════════════════════════════
 
     # Grid definition factory
@@ -68,3 +75,37 @@ services:
             - '@prestashop.module.dzcarriermanager.grid.data_provider.parcels'
             - '@prestashop.core.grid.filter.form_factory'
             - '@prestashop.core.hook.dispatcher'
+
+    # ══════════════════════════════════════════════════════════════
+    #  GRID — Carrier Accounts
+    # ══════════════════════════════════════════════════════════════
+
+    # Grid definition factory
+    prestashop.module.dzcarriermanager.grid.definition.factory.carrier_accounts:
+        class: 'Module\DzCarrierManager\Grid\Definition\Factory\CarrierAccountGridDefinitionFactory'
+        parent: 'prestashop.core.grid.definition.factory.abstract_grid_definition'
+
+    # Query builder
+    Module\DzCarrierManager\Grid\Query\CarrierAccountQueryBuilder:
+        parent: 'prestashop.core.grid.abstract_query_builder'
+        autowire: true
+        autoconfigure: true
+
+    # Data provider
+    prestashop.module.dzcarriermanager.grid.data_provider.carrier_accounts:
+        class: '%prestashop.core.grid.data.factory.doctrine_grid_data_factory%'
+        arguments:
+            - '@Module\DzCarrierManager\Grid\Query\CarrierAccountQueryBuilder'
+            - '@prestashop.core.hook.dispatcher'
+            - '@prestashop.core.grid.query.doctrine_query_parser'
+            - 'dzcarriermanager_carrier_account'
+
+    # Grid factory
+    prestashop.module.dzcarriermanager.grid.factory.carrier_accounts:
+        class: 'PrestaShop\PrestaShop\Core\Grid\GridFactory'
+        arguments:
+            - '@prestashop.module.dzcarriermanager.grid.definition.factory.carrier_accounts'
+            - '@prestashop.module.dzcarriermanager.grid.data_provider.carrier_accounts'
+            - '@prestashop.core.grid.filter.form_factory'
+            - '@prestashop.core.hook.dispatcher'
+

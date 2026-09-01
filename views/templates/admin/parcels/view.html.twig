@@ -23,7 +23,7 @@
                         <div class="col-md-6">
                             <p><strong>{{ 'Customer'|trans({}, 'Admin.Global') }}:</strong> {{ order.customer_name }}</p>
                             <p><strong>{{ 'Email'|trans({}, 'Admin.Global') }}:</strong> {{ order.customer_email }}</p>
-                            <p><strong>{{ 'Phone'|trans({}, 'Admin.Global') }}:</strong> {{ order.phone ?: order.phone_mobile }}</p>
+                            <p><strong>{{ 'Phone'|trans({}, 'Admin.Global') }}:</strong> {{ (parcel and parcel.phone) ? parcel.phone : (order.phone ?: order.phone_mobile) }}</p>
                         </div>
                         <div class="col-md-6">
                             <p><strong>{{ 'Address'|trans({}, 'Admin.Global') }}:</strong>

@@ -1,0 +1,12 @@
+{#
+  DZ Carrier Manager — Order Detail Tab Link Hook
+#}
+<li class="nav-item">
+    <a class="nav-link" id="dzcm-carrier-tracking-tab" data-bs-toggle="tab" href="#dzcm-carrier-tracking" role="tab" aria-controls="dzcm-carrier-tracking" aria-selected="false">
+        <i class="material-icons">local_shipping</i>
+        {{ 'Carrier Tracking'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+        {% if parcel and parcel.tracking %}
+            <span class="badge bg-primary ms-1">{{ parcel.tracking }}</span>
+        {% endif %}
+    </a>
+</li>

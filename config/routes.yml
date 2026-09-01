@@ -66,3 +66,56 @@ ps_dzcarriermanager_parcel_view:
         _legacy_link: 'AdminDzCarrierManagerParcels:view'
     requirements:
         orderId: \d+
+
+# ══════════════════════════════════════════════════════════════════
+#  CARRIER ACCOUNTS
+# ══════════════════════════════════════════════════════════════════
+
+ps_dzcarriermanager_carrier_index:
+    path: /dz-carrier-manager/carriers
+    methods: [GET]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\CarrierAccountController::indexAction'
+        _legacy_controller: 'AdminDzCarrierManagerCarriers'
+        _legacy_link: 'AdminDzCarrierManagerCarriers'
+
+ps_dzcarriermanager_carrier_edit:
+    path: /dz-carrier-manager/carriers/{id}/edit
+    methods: [GET, POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\CarrierAccountController::editAction'
+        _legacy_controller: 'AdminDzCarrierManagerCarriers'
+        _legacy_link: 'AdminDzCarrierManagerCarriers:edit'
+    requirements:
+        id: \d+
+
+ps_dzcarriermanager_carrier_toggle_default:
+    path: /dz-carrier-manager/carriers/{id}/toggle-default
+    methods: [POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\CarrierAccountController::toggleDefaultAction'
+        _legacy_controller: 'AdminDzCarrierManagerCarriers'
+        _legacy_link: 'AdminDzCarrierManagerCarriers:toggledefault'
+    requirements:
+        id: \d+
+
+ps_dzcarriermanager_carrier_toggle_active:
+    path: /dz-carrier-manager/carriers/{id}/toggle-active
+    methods: [POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\CarrierAccountController::toggleActiveAction'
+        _legacy_controller: 'AdminDzCarrierManagerCarriers'
+        _legacy_link: 'AdminDzCarrierManagerCarriers:toggleactive'
+    requirements:
+        id: \d+
+
+ps_dzcarriermanager_carrier_test:
+    path: /dz-carrier-manager/carriers/{id}/test
+    methods: [POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\CarrierAccountController::testConnectionAction'
+        _legacy_controller: 'AdminDzCarrierManagerCarriers'
+        _legacy_link: 'AdminDzCarrierManagerCarriers:test'
+    requirements:
+        id: \d+
+

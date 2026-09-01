@@ -73,6 +73,13 @@ class ParcelGridDefinitionFactory extends AbstractGridDefinitionFactory
                     ])
             )
             ->add(
+                (new DataColumn('phone'))
+                    ->setName($this->trans('Phone', [], 'Admin.Global'))
+                    ->setOptions([
+                        'field' => 'phone',
+                    ])
+            )
+            ->add(
                 (new DataColumn('total_paid'))
                     ->setName($this->trans('Total', [], 'Admin.Global'))
                     ->setOptions([
@@ -156,6 +163,14 @@ class ParcelGridDefinitionFactory extends AbstractGridDefinitionFactory
                         'attr' => ['placeholder' => $this->trans('Customer', [], 'Admin.Global')],
                     ])
                     ->setAssociatedColumn('customer_name')
+            )
+            ->add(
+                (new Filter('phone', TextType::class))
+                    ->setTypeOptions([
+                        'required' => false,
+                        'attr' => ['placeholder' => $this->trans('Phone', [], 'Admin.Global')],
+                    ])
+                    ->setAssociatedColumn('phone')
             )
             ->add(
                 (new Filter('parcel_status', ChoiceType::class))

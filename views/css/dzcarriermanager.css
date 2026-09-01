@@ -186,3 +186,7 @@
 .column-id_order {
     font-weight: 600;
 }
+
+.column-phone {
+    white-space: nowrap;
+}

@@ -1,0 +1,28 @@
+{#
+  DZ Carrier Manager — Carrier Accounts Grid Page
+#}
+
+{% extends '@PrestaShop/Admin/layout.html.twig' %}
+
+{% block content %}
+    <div class="row">
+        <div class="col">
+            {% include '@PrestaShop/Admin/Common/Grid/grid_panel.html.twig' with {'grid': carrierGrid} %}
+        </div>
+    </div>
+{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <link rel="stylesheet" href="{{ asset('../modules/dzcarriermanager/views/css/dzcarriermanager.css') }}">
+{% endblock %}
+
+{% block javascripts %}
+    {{ parent() }}
+    <script src="{{ asset('themes/default/js/bundle/pagination.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            window.prestashop.component.initComponents(['Grid']);
+        });
+    </script>
+{% endblock %}

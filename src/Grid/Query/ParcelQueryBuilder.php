@@ -41,7 +41,7 @@ class ParcelQueryBuilder extends AbstractDoctrineQueryBuilder
             'o.date_add',
             'CONCAT(c.firstname, \' \', c.lastname) AS customer_name',
             'a.city',
-            'a.phone',
+            'COALESCE(NULLIF(p.phone, \'\'), NULLIF(a.phone, \'\'), a.phone_mobile) AS phone',
             's.name AS wilaya',
             'p.id AS parcel_id',
             'p.tracking',
@@ -100,6 +100,11 @@ class ParcelQueryBuilder extends AbstractDoctrineQueryBuilder
                 case 'customer_name':
                     $qb->andWhere('CONCAT(c.firstname, \' \', c.lastname) LIKE :customer_name')
                         ->setParameter('customer_name', '%' . $value . '%');
+                    break;
+
+                case 'phone':
+                    $qb->andWhere('COALESCE(NULLIF(p.phone, \'\'), NULLIF(a.phone, \'\'), a.phone_mobile) LIKE :phone')
+                        ->setParameter('phone', '%' . $value . '%');
                     break;
 
                 case 'tracking':
