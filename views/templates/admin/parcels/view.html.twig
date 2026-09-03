@@ -29,8 +29,8 @@
                             <p><strong>{{ 'Address'|trans({}, 'Admin.Global') }}:</strong>
                                 {{ order.address1 }}{% if order.address2 %}, {{ order.address2 }}{% endif %}
                             </p>
-                            <p><strong>{{ 'City'|trans({}, 'Admin.Global') }}:</strong> {{ order.city }}</p>
-                            <p><strong>{{ 'Wilaya'|trans({}, 'Modules.Dzcarriermanager.Admin') }}:</strong> {{ order.wilaya }}</p>
+                            <p><strong>{{ 'City'|trans({}, 'Admin.Global') }}:</strong> {{ (parcel and parcel.commune_name) ? parcel.commune_name : order.city }}</p>
+                            <p><strong>{{ 'Wilaya'|trans({}, 'Modules.Dzcarriermanager.Admin') }}:</strong> {{ (parcel and parcel.wilaya_name) ? parcel.wilaya_name : order.wilaya }}</p>
                         </div>
                     </div>
 

@@ -3,160 +3,120 @@
  *
  * Handles:
  * - PS9 Grid component initialization (all extensions)
+ * - Fallback for SubmitRowAction (which PS9 renders as <a href="#" class="js-submit-row-action">)
  * - Status badge rendering (color-coded by lifecycle phase)
  * - Delivery type badge rendering
  * - Duplicate tab bar removal
  */
 document.addEventListener('DOMContentLoaded', function () {
     // ── 1. Initialize PS9 Grid Component ────────────────────────
-    // PS9's Grid component auto-discovers and initializes extensions:
-    // SubmitRowActionExtension, LinkRowActionExtension, BulkActionCheckboxExtension,
-    // SubmitBulkActionExtension, SortingExtension, etc.
+    var gridInitialized = false;
     try {
         if (window.prestashop && window.prestashop.component) {
             window.prestashop.component.initComponents(['Grid']);
+            gridInitialized = true;
         }
     } catch (e) {
         console.warn('[DzCarrierManager] Grid component init failed:', e);
     }
 
-    // ── 2. Fallback: Ensure SubmitRowAction forms work ──────────
-    // PS9's SubmitRowAction renders <form> elements with a <button type="submit">.
-    // If the Grid extensions didn't bind properly, we manually ensure the
-    // confirmation dialogs and form submissions work.
-    initSubmitRowActions();
-    initDropdownToggle();
+    // ── 2. Fallback: Bind SubmitRowAction anchors ───────────────
+    // PS9 renders SubmitRowAction as:
+    //   <a class="js-submit-row-action" href="#"
+    //      data-url="/path/to/action" data-method="POST"
+    //      data-confirm-message="Are you sure?">
+    //
+    // The Grid JS extension normally handles click → confirm → dynamic form submit.
+    // If the Grid extension didn't bind, we need to handle this ourselves.
+    setTimeout(function () {
+        initSubmitRowActionFallback();
+    }, 200);
 
     // ── 3. Apply custom badge styles ────────────────────────────
     applyStatusBadges();
     applyDeliveryTypeBadges();
 
-    // ── 4. Re-apply after grid refreshes ────────────────────────
-    var gridPanel = document.querySelector('.js-grid-table');
-    if (!gridPanel) {
-        gridPanel = document.querySelector('.grid-panel');
-    }
+    // ── 4. Re-apply after grid refreshes (sorting, filtering, pagination) ──
+    var gridPanel = document.querySelector('.js-grid-table') || document.querySelector('.grid-panel');
     if (gridPanel) {
         var observer = new MutationObserver(function () {
             applyStatusBadges();
             applyDeliveryTypeBadges();
+            // Re-bind fallback after grid DOM changes
+            setTimeout(function () { initSubmitRowActionFallback(); }, 100);
         });
         observer.observe(gridPanel, { childList: true, subtree: true });
     }
 
-    // ── 5. Retry badge application (grid may render after DOM ready) ──
+    // ── 5. Retry badge application (grid may render after DOMContentLoaded) ──
     setTimeout(function () {
         applyStatusBadges();
         applyDeliveryTypeBadges();
-    }, 300);
+    }, 500);
 
     setTimeout(function () {
         applyStatusBadges();
         applyDeliveryTypeBadges();
-    }, 1000);
+    }, 1500);
 
     // ── 6. Remove duplicate tab bar ─────────────────────────────
     removeDuplicateTabBar();
 });
 
 /**
- * Ensure SubmitRowAction forms work even if PS9 Grid extensions fail.
- * Each row action renders as: <form method="POST" action="..."><button type="submit">...</button></form>
- * PS9 adds a confirmation dialog via JS. If that JS doesn't load, we add our own.
+ * Fallback handler for PS9's SubmitRowAction anchors.
+ *
+ * PS9's submit.html.twig renders each SubmitRowAction as:
+ *   <a class="js-submit-row-action" href="#"
+ *      data-url="{route_url}" data-method="POST"
+ *      data-confirm-message="{message}">
+ *
+ * The Grid JS extension (SubmitRowActionExtension) normally intercepts
+ * clicks, shows a confirm dialog, creates a hidden form, and submits it.
+ * If that extension fails to load, we replicate the behavior here.
  */
-function initSubmitRowActions() {
-    var forms = document.querySelectorAll('.js-grid-table form.grid-action-submit-btn, .js-grid-table form[method="POST"]');
-    forms.forEach(function (form) {
-        var button = form.querySelector('button[type="submit"]');
-        if (!button) return;
+function initSubmitRowActionFallback() {
+    var actions = document.querySelectorAll('a.js-submit-row-action');
 
-        // Check if PS9 already bound an event (look for data attribute)
-        if (button.dataset.dzcmBound) return;
-        button.dataset.dzcmBound = 'true';
+    actions.forEach(function (link) {
+        // Skip if already bound (by us or by PS9's extension)
+        if (link.dataset.dzcmFallbackBound) return;
+        link.dataset.dzcmFallbackBound = 'true';
 
-        button.addEventListener('click', function (e) {
-            var confirmMsg = button.getAttribute('data-confirm-message')
-                || form.getAttribute('data-confirm-message')
-                || '';
+        link.addEventListener('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
 
-            if (confirmMsg) {
-                // PS9 may have already shown a dialog — check if we need to intervene
-                // Only show our dialog if PS9's extension didn't fire
-                if (!e.defaultPrevented) {
-                    e.preventDefault();
-                    if (confirm(confirmMsg)) {
-                        form.submit();
-                    }
-                }
+            var url = link.getAttribute('data-url');
+            var method = (link.getAttribute('data-method') || 'POST').toUpperCase();
+            var confirmMsg = link.getAttribute('data-confirm-message') || '';
+
+            if (!url) return;
+
+            // Show confirmation dialog if message is set
+            if (confirmMsg && !window.confirm(confirmMsg)) {
+                return;
             }
-            // If no confirm message, let the form submit naturally
+
+            // Create and submit a dynamic form (same as PS9's SubmitRowActionExtension)
+            var form = document.createElement('form');
+            form.method = method;
+            form.action = url;
+            form.style.display = 'none';
+
+            // PS9 requires CSRF token — try to find one on the page
+            var csrfMeta = document.querySelector('meta[name="csrf-token"]');
+            if (csrfMeta) {
+                var csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = '_token';
+                csrfInput.value = csrfMeta.getAttribute('content');
+                form.appendChild(csrfInput);
+            }
+
+            document.body.appendChild(form);
+            form.submit();
         });
-    });
-
-    // Also handle SubmitRowAction buttons that PS9 renders inside dropdown menus
-    var dropdownForms = document.querySelectorAll('.dropdown-menu form');
-    dropdownForms.forEach(function (form) {
-        var button = form.querySelector('button[type="submit"]');
-        if (!button || button.dataset.dzcmBound) return;
-        button.dataset.dzcmBound = 'true';
-
-        button.addEventListener('click', function (e) {
-            var confirmMsg = button.getAttribute('data-confirm-message')
-                || form.getAttribute('data-confirm-message')
-                || '';
-
-            if (confirmMsg && !e.defaultPrevented) {
-                e.preventDefault();
-                if (confirm(confirmMsg)) {
-                    form.submit();
-                }
-            }
-        });
-    });
-}
-
-/**
- * Ensure the three-dot (⋮) dropdown toggles open on click.
- * PS9 uses Bootstrap 5 dropdowns, but if the Grid JS doesn't init,
- * the dropdown toggle might not work.
- */
-function initDropdownToggle() {
-    var toggles = document.querySelectorAll('.js-grid-table .dropdown-toggle');
-    toggles.forEach(function (toggle) {
-        if (toggle.dataset.dzcmBound) return;
-        toggle.dataset.dzcmBound = 'true';
-
-        // Only add manual toggle if Bootstrap's dropdown isn't already working
-        toggle.addEventListener('click', function (e) {
-            var menu = toggle.nextElementSibling;
-            if (!menu || !menu.classList.contains('dropdown-menu')) {
-                // Try finding within parent
-                var parent = toggle.closest('.dropdown');
-                if (parent) {
-                    menu = parent.querySelector('.dropdown-menu');
-                }
-            }
-            if (menu) {
-                // Check if Bootstrap already handled it
-                if (!menu.classList.contains('show')) {
-                    // Close all other open dropdowns first
-                    document.querySelectorAll('.dropdown-menu.show').forEach(function (m) {
-                        m.classList.remove('show');
-                    });
-                    menu.classList.toggle('show');
-                    e.stopPropagation();
-                }
-            }
-        });
-    });
-
-    // Close dropdowns when clicking elsewhere
-    document.addEventListener('click', function (e) {
-        if (!e.target.closest('.dropdown')) {
-            document.querySelectorAll('.dropdown-menu.show').forEach(function (m) {
-                m.classList.remove('show');
-            });
-        }
     });
 }
 
@@ -169,9 +129,7 @@ function applyDeliveryTypeBadges() {
 
     cells.forEach(function (cell) {
         var raw = cell.textContent.trim().toLowerCase();
-        if (!raw || cell.querySelector('.dzcm-delivery-badge')) {
-            return;
-        }
+        if (!raw || cell.querySelector('.dzcm-delivery-badge')) return;
 
         var isStopDesk = raw === 'stop_desk' || raw === 'stop desk' || raw === 'stopdesk';
         var label = isStopDesk ? '📦 Stop Desk' : '🏠 Home';
@@ -194,9 +152,7 @@ function applyStatusBadges() {
 
     statusCells.forEach(function (cell) {
         var rawStatus = cell.textContent.trim();
-        if (!rawStatus || cell.querySelector('.dzcm-status-badge')) {
-            return; // Already badged or empty
-        }
+        if (!rawStatus || cell.querySelector('.dzcm-status-badge')) return;
 
         var phase = getPhaseForStatus(rawStatus);
         var label = getLabelForStatus(rawStatus);
@@ -288,20 +244,12 @@ function getLabelForStatus(status) {
 
 /**
  * Remove the duplicate tab bar that PS9 renders.
- * PS9 renders two tab levels for parent + child tabs:
- *   Row 1: Page-level tabs (text only, from parent tab hierarchy)
- *   Row 2: Same tabs with icons (from child tab definitions)
- * We keep Row 1 and hide Row 2.
  */
 function removeDuplicateTabBar() {
-    // PS9 renders the page tabs as <ul class="nav nav-tabs"> inside the content header.
-    // The duplicate appears as a second <ul class="nav nav-tabs"> lower on the page.
     var tabBars = document.querySelectorAll('ul.nav.nav-tabs');
 
     if (tabBars.length > 1) {
-        // Keep the first one (main navigation), hide the second (duplicate)
         for (var i = 1; i < tabBars.length; i++) {
-            // Only hide if it contains links to the same destinations
             var links = tabBars[i].querySelectorAll('a[href]');
             var isDuplicate = false;
             links.forEach(function (link) {
