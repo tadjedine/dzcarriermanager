@@ -296,6 +296,34 @@ class ParcelController extends PrestaShopAdminController
         );
     }
 
+    /**
+     * Download/redirect to the shipping label PDF for a parcel.
+     */
+    public function downloadLabelAction(int $orderId): RedirectResponse
+    {
+        $prefix = $this->getDbPrefix();
+
+        $parcel = $this->connection->fetchAssociative(
+            "SELECT label_url FROM {$prefix}cm_parcels WHERE order_id = :orderId",
+            ['orderId' => $orderId]
+        );
+
+        if (!$parcel || empty($parcel['label_url'])) {
+            $this->addFlash(
+                'warning',
+                $this->trans(
+                    'No shipping label available for order #%id%. The order must be sent to the carrier first.',
+                    ['%id%' => $orderId],
+                    'Modules.Dzcarriermanager.Admin'
+                )
+            );
+
+            return $this->redirectToRoute('ps_dzcarriermanager_parcel_index');
+        }
+
+        return $this->redirect($parcel['label_url']);
+    }
+
     // ════════════════════════════════════════════════════════════════
     //  PRIVATE HELPERS
     // ════════════════════════════════════════════════════════════════

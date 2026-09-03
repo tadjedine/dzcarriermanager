@@ -67,6 +67,16 @@ ps_dzcarriermanager_parcel_view:
     requirements:
         orderId: \d+
 
+ps_dzcarriermanager_parcel_label:
+    path: /dz-carrier-manager/parcels/{orderId}/label
+    methods: [GET]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::downloadLabelAction'
+        _legacy_controller: 'AdminDzCarrierManagerParcels'
+        _legacy_link: 'AdminDzCarrierManagerParcels:label'
+    requirements:
+        orderId: \d+
+
 # ══════════════════════════════════════════════════════════════════
 #  CARRIER ACCOUNTS
 # ══════════════════════════════════════════════════════════════════
