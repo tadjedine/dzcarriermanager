@@ -21,6 +21,10 @@ if (isset($_GET['subscribe'], $_GET['crc_token'])) {
 }
 
 // ── 2. Bootstrap PrestaShop ───────────────────────────────────────────────
+if (!defined('_PS_ADMIN_DIR_')) {
+    define('_PS_ADMIN_DIR_', 'admin');
+}
+
 $configPath = dirname(__DIR__, 2) . '/config/config.inc.php';
 if (!file_exists($configPath)) {
     http_response_code(500);
@@ -28,7 +32,12 @@ if (!file_exists($configPath)) {
     echo json_encode(['error' => 'PrestaShop configuration not found.']);
     exit(1);
 }
+
+// Prevent PrestaShop from issuing a 302 canonical domain redirect when accessed via tunnel/proxy
+$originalHost = $_SERVER['HTTP_HOST'] ?? '';
+$_SERVER['HTTP_HOST'] = 'prestashop.test';
 require_once $configPath;
+$_SERVER['HTTP_HOST'] = $originalHost;
 
 // Ensure autoloader is available
 $autoloadPath = __DIR__ . '/vendor/autoload.php';

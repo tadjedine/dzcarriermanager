@@ -56,7 +56,14 @@
                         <div class="form-text">{{ 'Used to verify HMAC-SHA256 signatures for incoming event webhooks.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
                     </div>
 
-                    {# Webhook URL (Readonly with Copy Button) #}
+                    {# Public Base URL (for tunnel/proxy support) #}
+                    <div class="mb-3">
+                        <label for="public_base_url" class="form-label fw-bold">{{ 'Public Base URL'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</label>
+                        <input type="url" class="form-control" id="public_base_url" name="public_base_url" value="{{ publicBaseUrl }}" placeholder="e.g. https://xxxx-xxxx.trycloudflare.com" data-carrier-code="{{ account.carrier_code }}">
+                        <div class="form-text">{{ 'Your public tunnel URL (Cloudflare, ngrok). Leave empty to use the shop domain. The Webhook URL below updates automatically.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                    </div>
+
+                    {# Webhook URL (Readonly with Copy Button — auto-updated from Public Base URL) #}
                     <div class="mb-3">
                         <label class="form-label fw-bold">{{ 'Webhook Reception URL'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</label>
                         <div class="input-group">
@@ -65,7 +72,7 @@
                                 <i class="material-icons" style="font-size:16px">content_copy</i> {{ 'Copy'|trans({}, 'Admin.Actions') }}
                             </button>
                         </div>
-                        <div class="form-text">{{ 'Register this URL in your carrier developer dashboard (or through ngrok for local development).'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
+                        <div class="form-text">{{ 'Register this URL in your carrier webhook dashboard. Updates automatically when you change the Public Base URL above.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</div>
                     </div>
 
                     <hr class="my-4">

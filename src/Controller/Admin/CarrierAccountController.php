@@ -79,10 +79,12 @@ class CarrierAccountController extends PrestaShopAdminController
             // Extra config fields
             $fromWilayaId = (int) $request->request->get('from_wilaya_id', $extraConfig['from_wilaya_id'] ?? 16);
             $baseUrl = trim((string) $request->request->get('base_url', $extraConfig['base_url'] ?? 'https://api.guepex.app/v1'));
+            $publicBaseUrl = trim((string) $request->request->get('public_base_url', $extraConfig['public_base_url'] ?? ''));
 
             $newExtraConfig = [
                 'from_wilaya_id' => $fromWilayaId,
                 'base_url' => $baseUrl,
+                'public_base_url' => $publicBaseUrl,
             ];
 
             // If no new api_token entered, retain existing one if field was left blank
@@ -121,6 +123,8 @@ class CarrierAccountController extends PrestaShopAdminController
             return $this->redirectToRoute('ps_dzcarriermanager_carrier_index');
         }
 
+        $publicBaseUrl = $extraConfig['public_base_url'] ?? '';
+
         return $this->render(
             '@Modules/dzcarriermanager/views/templates/admin/carriers/edit.html.twig',
             [
@@ -132,7 +136,8 @@ class CarrierAccountController extends PrestaShopAdminController
                 ),
                 'account' => $account,
                 'extraConfig' => $extraConfig,
-                'webhookUrl' => $this->generateWebhookUrl($account['carrier_code']),
+                'publicBaseUrl' => $publicBaseUrl,
+                'webhookUrl' => $this->generateWebhookUrl($account['carrier_code'], $publicBaseUrl),
             ]
         );
     }
@@ -240,11 +245,16 @@ class CarrierAccountController extends PrestaShopAdminController
         }
     }
 
-    private function generateWebhookUrl(string $carrierCode): string
+    private function generateWebhookUrl(string $carrierCode, string $publicBaseUrl = ''): string
     {
-        $context = \Context::getContext();
-        $shopUrl = $context && $context->shop ? $context->shop->getBaseURL(true) : '';
-        return rtrim($shopUrl, '/') . '/modules/dzcarriermanager/webhook.php?carrier=' . urlencode($carrierCode);
+        if (!empty($publicBaseUrl)) {
+            $base = $publicBaseUrl;
+        } else {
+            $context = \Context::getContext();
+            $base = $context && $context->shop ? $context->shop->getBaseURL(true) : '';
+        }
+
+        return rtrim($base, '/') . '/modules/dzcarriermanager/webhook.php?carrier=' . urlencode($carrierCode);
     }
 
     private function getDbPrefix(): string

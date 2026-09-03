@@ -1,18 +1,41 @@
 /**
  * DZ Carrier Manager — Carrier Account JS
- * Handles connection testing and copy webhook URL actions.
+ * Handles connection testing, copy webhook URL, and dynamic webhook URL from Public Base URL.
  */
 document.addEventListener('DOMContentLoaded', function () {
-    // ── Copy Webhook URL ─────────────────────────────────────────
-    const copyBtn = document.getElementById('dzcm-copy-webhook-btn');
+    // ── Dynamic Webhook URL from Public Base URL ─────────────────
+    const publicBaseUrlInput = document.getElementById('public_base_url');
     const webhookInput = document.getElementById('dzcm-webhook-url');
+
+    if (publicBaseUrlInput && webhookInput) {
+        var carrierCode = publicBaseUrlInput.getAttribute('data-carrier-code') || 'guepex';
+        var webhookPath = '/modules/dzcarriermanager/webhook.php?carrier=' + encodeURIComponent(carrierCode);
+
+        publicBaseUrlInput.addEventListener('input', function () {
+            var base = publicBaseUrlInput.value.trim();
+            if (!base) {
+                // Fall back to current shop URL (extract from current webhook URL)
+                var currentUrl = webhookInput.defaultValue || webhookInput.value;
+                var pathIdx = currentUrl.indexOf('/modules/');
+                if (pathIdx > 0) {
+                    base = currentUrl.substring(0, pathIdx);
+                }
+            }
+            // Remove trailing slash from base
+            base = base.replace(/\/+$/, '');
+            webhookInput.value = base + webhookPath;
+        });
+    }
+
+    // ── Copy Webhook URL ─────────────────────────────────────────
+    var copyBtn = document.getElementById('dzcm-copy-webhook-btn');
 
     if (copyBtn && webhookInput) {
         copyBtn.addEventListener('click', function () {
             webhookInput.select();
             webhookInput.setSelectionRange(0, 99999);
             navigator.clipboard.writeText(webhookInput.value).then(function () {
-                const originalHtml = copyBtn.innerHTML;
+                var originalHtml = copyBtn.innerHTML;
                 copyBtn.classList.remove('btn-outline-secondary');
                 copyBtn.classList.add('btn-success');
                 copyBtn.innerHTML = '<i class="material-icons" style="font-size:16px">check</i> Copied!';
@@ -28,15 +51,15 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // ── Test API Connection ──────────────────────────────────────
-    const testBtn = document.getElementById('dzcm-btn-test-connection');
-    const resultBox = document.getElementById('dzcm-test-result');
+    var testBtn = document.getElementById('dzcm-btn-test-connection');
+    var resultBox = document.getElementById('dzcm-test-result');
 
     if (testBtn && resultBox) {
         testBtn.addEventListener('click', function () {
-            const testUrl = testBtn.getAttribute('data-test-url');
-            const apiId = document.getElementById('api_id') ? document.getElementById('api_id').value : '';
-            const apiToken = document.getElementById('api_token') ? document.getElementById('api_token').value : '';
-            const baseUrl = document.getElementById('base_url') ? document.getElementById('base_url').value : '';
+            var testUrl = testBtn.getAttribute('data-test-url');
+            var apiId = document.getElementById('api_id') ? document.getElementById('api_id').value : '';
+            var apiToken = document.getElementById('api_token') ? document.getElementById('api_token').value : '';
+            var baseUrl = document.getElementById('base_url') ? document.getElementById('base_url').value : '';
 
             if (!apiId || !apiToken) {
                 resultBox.className = 'alert alert-warning mt-3';
@@ -46,11 +69,11 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             testBtn.disabled = true;
-            const originalBtnHtml = testBtn.innerHTML;
+            var originalBtnHtml = testBtn.innerHTML;
             testBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Testing...';
             resultBox.classList.add('d-none');
 
-            const formData = new FormData();
+            var formData = new FormData();
             formData.append('api_id', apiId);
             formData.append('api_token', apiToken);
             if (baseUrl) {

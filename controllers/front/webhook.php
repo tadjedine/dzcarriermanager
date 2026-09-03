@@ -16,6 +16,12 @@ class DzCarrierManagerWebhookModuleFrontController extends ModuleFrontController
     public $ssl = true;
     public $ajax = true;
 
+    protected function canonicalRedirection(string $canonical_url = '')
+    {
+        // Disable canonical redirection so tunnel / proxy URLs are never 302 redirected
+        return;
+    }
+
     public function init(): void
     {
         // ── 1. Fast Challenge-Response Check (CRC) ──────────────

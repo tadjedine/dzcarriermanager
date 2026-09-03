@@ -290,6 +290,16 @@ class ParcelGridDefinitionFactory extends AbstractGridDefinitionFactory
                         'route_param_name' => 'orderId',
                         'route_param_field' => 'id_order',
                     ])
+            )
+            ->add(
+                (new LinkRowAction('label'))
+                    ->setName($this->trans('Download Label', [], 'Modules.Dzcarriermanager.Admin'))
+                    ->setIcon('print')
+                    ->setOptions([
+                        'route' => 'ps_dzcarriermanager_parcel_label',
+                        'route_param_name' => 'orderId',
+                        'route_param_field' => 'id_order',
+                    ])
             );
     }
 }
