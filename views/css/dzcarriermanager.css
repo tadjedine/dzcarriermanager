@@ -6,81 +6,82 @@
 /* ── Status badges ────────────────────────────────────────────── */
 
 .dzcm-status-badge {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 0.78rem;
-    font-weight: 600;
+    display: inline-block !important;
+    padding: 4px 10px !important;
+    border-radius: 12px !important;
+    font-size: 0.78rem !important;
+    font-weight: 600 !important;
     letter-spacing: 0.02em;
     white-space: nowrap;
     line-height: 1.4;
+    text-align: center;
 }
 
 /* Pending (Not Confirmed / Confirmed) */
 .dzcm-phase-pending {
-    background-color: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffc107;
+    background-color: #fff3cd !important;
+    color: #856404 !important;
+    border: 1px solid #ffc107 !important;
 }
 
 /* Processing (preparing, ready to ship, etc.) */
 .dzcm-phase-processing {
-    background-color: #e0e7ff;
-    color: #3730a3;
-    border: 1px solid #818cf8;
+    background-color: #e0e7ff !important;
+    color: #3730a3 !important;
+    border: 1px solid #818cf8 !important;
 }
 
 /* Shipping (in transit, picked up, etc.) */
 .dzcm-phase-shipping {
-    background-color: #dbeafe;
-    color: #1e40af;
-    border: 1px solid #60a5fa;
+    background-color: #dbeafe !important;
+    color: #1e40af !important;
+    border: 1px solid #60a5fa !important;
 }
 
 /* Delivered */
 .dzcm-phase-delivered {
-    background-color: #d1fae5;
-    color: #065f46;
-    border: 1px solid #34d399;
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+    border: 1px solid #34d399 !important;
 }
 
 /* Failed (cancelled, alert, etc.) */
 .dzcm-phase-failed {
-    background-color: #fee2e2;
-    color: #991b1b;
-    border: 1px solid #f87171;
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 1px solid #f87171 !important;
 }
 
 /* Returned */
 .dzcm-phase-returned {
-    background-color: #f3e8ff;
-    color: #6b21a8;
-    border: 1px solid #a78bfa;
+    background-color: #f3e8ff !important;
+    color: #6b21a8 !important;
+    border: 1px solid #a78bfa !important;
 }
 
 
 /* ── Delivery type badges ─────────────────────────────────────── */
 
 .dzcm-delivery-badge {
-    display: inline-block;
-    padding: 3px 8px;
-    border-radius: 10px;
-    font-size: 0.76rem;
-    font-weight: 500;
+    display: inline-block !important;
+    padding: 3px 8px !important;
+    border-radius: 10px !important;
+    font-size: 0.76rem !important;
+    font-weight: 500 !important;
     white-space: nowrap;
     line-height: 1.4;
 }
 
 .dzcm-delivery-home {
-    background-color: #ecfdf5;
-    color: #047857;
-    border: 1px solid #6ee7b7;
+    background-color: #ecfdf5 !important;
+    color: #047857 !important;
+    border: 1px solid #6ee7b7 !important;
 }
 
 .dzcm-delivery-stopdesk {
-    background-color: #fef3c7;
-    color: #92400e;
-    border: 1px solid #fbbf24;
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    border: 1px solid #fbbf24 !important;
 }
 
 
@@ -189,4 +190,13 @@
 
 .column-phone {
     white-space: nowrap;
+}
+
+
+/* ── Duplicate tab bar fix ────────────────────────────────────── */
+/* PS9 may render two levels of tab navigation for parent/child tabs.
+   The JS in parcels.js hides the duplicate one. This CSS is a fallback. */
+
+.page-head .nav-tabs + .card .nav-tabs {
+    display: none !important;
 }
