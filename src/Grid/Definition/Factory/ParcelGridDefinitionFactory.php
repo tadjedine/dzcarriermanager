@@ -9,7 +9,6 @@ use PrestaShop\PrestaShop\Core\Grid\Action\Bulk\Type\SubmitBulkAction;
 use PrestaShop\PrestaShop\Core\Grid\Action\GridActionCollection;
 use PrestaShop\PrestaShop\Core\Grid\Action\Row\RowActionCollection;
 use PrestaShop\PrestaShop\Core\Grid\Action\Row\Type\LinkRowAction;
-use PrestaShop\PrestaShop\Core\Grid\Action\Row\Type\SubmitRowAction;
 use PrestaShop\PrestaShop\Core\Grid\Action\Type\SimpleGridAction;
 use PrestaShop\PrestaShop\Core\Grid\Column\ColumnCollection;
 use PrestaShop\PrestaShop\Core\Grid\Column\Type\Common\ActionColumn;
@@ -250,35 +249,29 @@ class ParcelGridDefinitionFactory extends AbstractGridDefinitionFactory
     {
         return (new RowActionCollection())
             ->add(
-                (new SubmitRowAction('confirm'))
+                (new LinkRowAction('confirm'))
                     ->setName($this->trans('Confirm', [], 'Modules.Dzcarriermanager.Admin'))
                     ->setIcon('check_circle')
                     ->setOptions([
-                        'method' => 'POST',
                         'route' => 'ps_dzcarriermanager_parcel_confirm',
                         'route_param_name' => 'orderId',
                         'route_param_field' => 'id_order',
-                        'confirm_message' => $this->trans(
-                            'Confirm this order?',
-                            [],
-                            'Modules.Dzcarriermanager.Admin'
-                        ),
+                        'accessibility_checker' => function (array $record) {
+                            return in_array($record['parcel_status'], ['not_confirmed', 'Not Confirmed', null, ''], true);
+                        }
                     ])
             )
             ->add(
-                (new SubmitRowAction('send'))
-                    ->setName($this->trans('Send to carrier', [], 'Modules.Dzcarriermanager.Admin'))
-                    ->setIcon('local_shipping')
+                (new LinkRowAction('unconfirm'))
+                    ->setName($this->trans('Unconfirm', [], 'Modules.Dzcarriermanager.Admin'))
+                    ->setIcon('cancel')
                     ->setOptions([
-                        'method' => 'POST',
-                        'route' => 'ps_dzcarriermanager_parcel_send',
+                        'route' => 'ps_dzcarriermanager_parcel_unconfirm',
                         'route_param_name' => 'orderId',
                         'route_param_field' => 'id_order',
-                        'confirm_message' => $this->trans(
-                            'Send this order to the carrier?',
-                            [],
-                            'Modules.Dzcarriermanager.Admin'
-                        ),
+                        'accessibility_checker' => function (array $record) {
+                            return in_array($record['parcel_status'], ['confirmed', 'Confirmed'], true);
+                        }
                     ])
             )
             ->add(

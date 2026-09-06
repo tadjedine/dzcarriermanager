@@ -146,22 +146,23 @@
                     </h3>
                 </div>
                 <div class="card-body d-grid gap-2">
-                    {% if not parcel %}
-                        <form method="POST" action="{{ path('ps_dzcarriermanager_parcel_confirm', {orderId: order.id_order}) }}">
-                            <input type="hidden" name="_token" value="{{ csrf_token('confirm') }}">
-                            <button type="submit" class="btn btn-success w-100">
-                                <i class="material-icons">check_circle</i>
-                                {{ 'Confirm Order'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
-                            </button>
-                        </form>
+                    {% if not parcel or parcel.status == 'not_confirmed' %}
+                        <a href="{{ path('ps_dzcarriermanager_parcel_confirm', {orderId: order.id_order}) }}" class="btn btn-success w-100 mb-2">
+                            <i class="material-icons">check_circle</i>
+                            {{ 'Confirm Order'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                        </a>
                     {% elseif parcel.status == 'confirmed' %}
-                        <form method="POST" action="{{ path('ps_dzcarriermanager_parcel_send', {orderId: order.id_order}) }}">
+                        <form method="POST" action="{{ path('ps_dzcarriermanager_parcel_send', {orderId: order.id_order}) }}" class="mb-2">
                             <input type="hidden" name="_token" value="{{ csrf_token('send') }}">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="material-icons">local_shipping</i>
                                 {{ 'Send to Carrier'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
                             </button>
                         </form>
+                        <a href="{{ path('ps_dzcarriermanager_parcel_unconfirm', {orderId: order.id_order}) }}" class="btn btn-outline-danger w-100">
+                            <i class="material-icons">close</i>
+                            {{ 'Unconfirm Order'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                        </a>
                     {% endif %}
 
                     <a href="{{ path('admin_orders_view', {orderId: order.id_order}) }}" class="btn btn-outline-secondary w-100">

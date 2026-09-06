@@ -3,7 +3,6 @@
  *
  * Handles:
  * - PS9 Grid component initialization (all extensions)
- * - Fallback for SubmitRowAction (which PS9 renders as <a href="#" class="js-submit-row-action">)
  * - Status badge rendering (color-coded by lifecycle phase)
  * - Delivery type badge rendering
  * - Duplicate tab bar removal
@@ -20,19 +19,7 @@ document.addEventListener('DOMContentLoaded', function () {
         console.warn('[DzCarrierManager] Grid component init failed:', e);
     }
 
-    // ── 2. Fallback: Bind SubmitRowAction anchors ───────────────
-    // PS9 renders SubmitRowAction as:
-    //   <a class="js-submit-row-action" href="#"
-    //      data-url="/path/to/action" data-method="POST"
-    //      data-confirm-message="Are you sure?">
-    //
-    // The Grid JS extension normally handles click → confirm → dynamic form submit.
-    // If the Grid extension didn't bind, we need to handle this ourselves.
-    setTimeout(function () {
-        initSubmitRowActionFallback();
-    }, 200);
-
-    // ── 3. Apply custom badge styles ────────────────────────────
+    // ── 2. Apply custom badge styles ────────────────────────────
     applyStatusBadges();
     applyDeliveryTypeBadges();
 
@@ -42,8 +29,6 @@ document.addEventListener('DOMContentLoaded', function () {
         var observer = new MutationObserver(function () {
             applyStatusBadges();
             applyDeliveryTypeBadges();
-            // Re-bind fallback after grid DOM changes
-            setTimeout(function () { initSubmitRowActionFallback(); }, 100);
         });
         observer.observe(gridPanel, { childList: true, subtree: true });
     }
@@ -63,62 +48,6 @@ document.addEventListener('DOMContentLoaded', function () {
     removeDuplicateTabBar();
 });
 
-/**
- * Fallback handler for PS9's SubmitRowAction anchors.
- *
- * PS9's submit.html.twig renders each SubmitRowAction as:
- *   <a class="js-submit-row-action" href="#"
- *      data-url="{route_url}" data-method="POST"
- *      data-confirm-message="{message}">
- *
- * The Grid JS extension (SubmitRowActionExtension) normally intercepts
- * clicks, shows a confirm dialog, creates a hidden form, and submits it.
- * If that extension fails to load, we replicate the behavior here.
- */
-function initSubmitRowActionFallback() {
-    var actions = document.querySelectorAll('a.js-submit-row-action');
-
-    actions.forEach(function (link) {
-        // Skip if already bound (by us or by PS9's extension)
-        if (link.dataset.dzcmFallbackBound) return;
-        link.dataset.dzcmFallbackBound = 'true';
-
-        link.addEventListener('click', function (e) {
-            e.preventDefault();
-            e.stopPropagation();
-
-            var url = link.getAttribute('data-url');
-            var method = (link.getAttribute('data-method') || 'POST').toUpperCase();
-            var confirmMsg = link.getAttribute('data-confirm-message') || '';
-
-            if (!url) return;
-
-            // Show confirmation dialog if message is set
-            if (confirmMsg && !window.confirm(confirmMsg)) {
-                return;
-            }
-
-            // Create and submit a dynamic form (same as PS9's SubmitRowActionExtension)
-            var form = document.createElement('form');
-            form.method = method;
-            form.action = url;
-            form.style.display = 'none';
-
-            // PS9 requires CSRF token — try to find one on the page
-            var csrfMeta = document.querySelector('meta[name="csrf-token"]');
-            if (csrfMeta) {
-                var csrfInput = document.createElement('input');
-                csrfInput.type = 'hidden';
-                csrfInput.name = '_token';
-                csrfInput.value = csrfMeta.getAttribute('content');
-                form.appendChild(csrfInput);
-            }
-
-            document.body.appendChild(form);
-            form.submit();
-        });
-    });
-}
 
 /**
  * Find all cells in the "delivery_type" column and render

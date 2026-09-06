@@ -200,3 +200,15 @@
 .page-head .nav-tabs + .card .nav-tabs {
     display: none !important;
 }
+
+/* ── Confirm / Unconfirm action buttons ───────────────────────── */
+
+.dzcm-confirm-btn:hover {
+    opacity: 0.8 !important;
+    background-color: #bbf7d0 !important;
+}
+
+.dzcm-unconfirm-btn:hover {
+    opacity: 0.8 !important;
+    background-color: #fecaca !important;
+}

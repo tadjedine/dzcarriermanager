@@ -86,6 +86,56 @@ class ParcelController extends PrestaShopAdminController
     }
 
     /**
+     * Unconfirm a single order — delete its cm_parcels row (only if status is 'confirmed' or 'not_confirmed').
+     */
+    public function unconfirmAction(int $orderId): RedirectResponse
+    {
+        $prefix = $this->getDbPrefix();
+
+        try {
+            $parcel = $this->connection->fetchAssociative(
+                "SELECT id, status FROM {$prefix}cm_parcels WHERE order_id = :orderId",
+                ['orderId' => $orderId]
+            );
+
+            if (!$parcel) {
+                $this->addFlash('warning', $this->trans(
+                    'Order #%id% has no parcel record to unconfirm.',
+                    ['%id%' => $orderId],
+                    'Modules.Dzcarriermanager.Admin'
+                ));
+                return $this->redirectToRoute('ps_dzcarriermanager_parcel_index');
+            }
+
+            // Only allow unconfirming if not yet sent to carrier
+            if (!in_array($parcel['status'], ['confirmed', 'not_confirmed'], true)) {
+                $this->addFlash('error', $this->trans(
+                    'Order #%id% cannot be unconfirmed — it has already been dispatched to the carrier (status: %status%).',
+                    ['%id%' => $orderId, '%status%' => $parcel['status']],
+                    'Modules.Dzcarriermanager.Admin'
+                ));
+                return $this->redirectToRoute('ps_dzcarriermanager_parcel_index');
+            }
+
+            // Update status back to not_confirmed instead of deleting the row
+            $this->connection->update($prefix . 'cm_parcels', [
+                'status' => 'not_confirmed',
+                'updated_at' => date('Y-m-d H:i:s'),
+            ], ['id' => (int) $parcel['id']]);
+
+            $this->addFlash('success', $this->trans(
+                'Order #%id% has been unconfirmed.',
+                ['%id%' => $orderId],
+                'Modules.Dzcarriermanager.Admin'
+            ));
+        } catch (\Throwable $e) {
+            $this->addFlash('error', 'Error unconfirming order: ' . $e->getMessage());
+        }
+
+        return $this->redirectToRoute('ps_dzcarriermanager_parcel_index');
+    }
+
+    /**
      * Bulk confirm selected orders.
      */
     public function confirmBulkAction(Request $request): RedirectResponse

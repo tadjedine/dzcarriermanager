@@ -23,11 +23,21 @@ ps_dzcarriermanager_parcel_search:
 
 ps_dzcarriermanager_parcel_confirm:
     path: /dz-carrier-manager/parcels/{orderId}/confirm
-    methods: [POST]
+    methods: [GET]
     defaults:
         _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::confirmAction'
         _legacy_controller: 'AdminDzCarrierManagerParcels'
         _legacy_link: 'AdminDzCarrierManagerParcels:confirm'
+    requirements:
+        orderId: \d+
+
+ps_dzcarriermanager_parcel_unconfirm:
+    path: /dz-carrier-manager/parcels/{orderId}/unconfirm
+    methods: [GET]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::unconfirmAction'
+        _legacy_controller: 'AdminDzCarrierManagerParcels'
+        _legacy_link: 'AdminDzCarrierManagerParcels:unconfirm'
     requirements:
         orderId: \d+
 
