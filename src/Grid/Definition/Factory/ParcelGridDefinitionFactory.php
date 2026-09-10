@@ -275,6 +275,19 @@ class ParcelGridDefinitionFactory extends AbstractGridDefinitionFactory
                     ])
             )
             ->add(
+                (new LinkRowAction('send_to_carrier'))
+                    ->setName($this->trans('Send to Carrier', [], 'Modules.Dzcarriermanager.Admin'))
+                    ->setIcon('local_shipping')
+                    ->setOptions([
+                        'route' => 'ps_dzcarriermanager_parcel_send',
+                        'route_param_name' => 'orderId',
+                        'route_param_field' => 'id_order',
+                        'accessibility_checker' => function (array $record) {
+                            return in_array($record['parcel_status'], ['confirmed', 'Confirmed'], true);
+                        }
+                    ])
+            )
+            ->add(
                 (new LinkRowAction('view'))
                     ->setName($this->trans('View', [], 'Admin.Actions'))
                     ->setIcon('visibility')
@@ -292,6 +305,9 @@ class ParcelGridDefinitionFactory extends AbstractGridDefinitionFactory
                         'route' => 'ps_dzcarriermanager_parcel_label',
                         'route_param_name' => 'orderId',
                         'route_param_field' => 'id_order',
+                        'accessibility_checker' => function (array $record) {
+                            return !empty($record['tracking']);
+                        }
                     ])
             );
     }

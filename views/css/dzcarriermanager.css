@@ -17,11 +17,18 @@
     text-align: center;
 }
 
-/* Pending (Not Confirmed / Confirmed) */
+/* Pending (Not Confirmed) */
 .dzcm-phase-pending {
     background-color: #fff3cd !important;
     color: #856404 !important;
     border: 1px solid #ffc107 !important;
+}
+
+/* Confirmed (ready to send to carrier) */
+.dzcm-phase-confirmed {
+    background-color: #d1fae5 !important;
+    color: #065f46 !important;
+    border: 1px solid #6ee7b7 !important;
 }
 
 /* Processing (preparing, ready to ship, etc.) */

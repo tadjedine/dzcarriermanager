@@ -37,7 +37,7 @@ class ParcelQueryBuilder extends AbstractDoctrineQueryBuilder
         $qb->select(
             'o.id_order',
             'o.reference',
-            'o.total_paid_tax_incl AS total_paid',
+            'ROUND(o.total_paid_tax_incl, 2) AS total_paid',
             'o.date_add',
             'CONCAT(c.firstname, \' \', c.lastname) AS customer_name',
             'COALESCE(NULLIF(p.commune_name, \'\'), a.city) AS city',

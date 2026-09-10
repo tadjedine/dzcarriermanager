@@ -347,18 +347,28 @@ class ParcelController extends PrestaShopAdminController
     }
 
     /**
-     * Download/redirect to the shipping label PDF for a parcel.
+     * Download/redirect to the shipping label (bordereau) for a parcel.
+     *
+     * Strategy:
+     * 1. If label_url is stored in cm_parcels → redirect to it
+     * 2. If no label_url but tracking exists → fetch parcel from carrier API,
+     *    extract the 'label' field, cache it, and redirect
+     * 3. If neither → flash error
      */
     public function downloadLabelAction(int $orderId): RedirectResponse
     {
         $prefix = $this->getDbPrefix();
 
+        // Fetch parcel with carrier account credentials for potential API fallback
         $parcel = $this->connection->fetchAssociative(
-            "SELECT label_url FROM {$prefix}cm_parcels WHERE order_id = :orderId",
+            "SELECT p.*, ca.api_id, ca.api_token, ca.carrier_code, ca.extra_config
+             FROM {$prefix}cm_parcels p
+             LEFT JOIN {$prefix}cm_carrier_accounts ca ON p.carrier_account_id = ca.id
+             WHERE p.order_id = :orderId",
             ['orderId' => $orderId]
         );
 
-        if (!$parcel || empty($parcel['label_url'])) {
+        if (!$parcel || (empty($parcel['label_url']) && empty($parcel['tracking']))) {
             $this->addFlash(
                 'warning',
                 $this->trans(
@@ -371,7 +381,52 @@ class ParcelController extends PrestaShopAdminController
             return $this->redirectToRoute('ps_dzcarriermanager_parcel_index');
         }
 
-        return $this->redirect($parcel['label_url']);
+        // 1. If we have a stored label URL, redirect directly
+        if (!empty($parcel['label_url'])) {
+            return $this->redirect($parcel['label_url']);
+        }
+
+        // 2. Fallback: fetch label URL from carrier API
+        try {
+            $carrier = $this->carrierRegistry->get($parcel['carrier_code']);
+            $parcelData = $carrier->getParcelStatus($parcel['tracking'], [
+                'api_id' => $parcel['api_id'],
+                'api_token' => $parcel['api_token'],
+                'extra_config' => $parcel['extra_config'],
+            ]);
+
+            $labelUrl = $parcelData['raw']['label'] ?? null;
+
+            if (!empty($labelUrl)) {
+                // Cache the label URL for future downloads
+                $this->connection->update($prefix . 'cm_parcels', [
+                    'label_url' => $labelUrl,
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ], ['id' => (int) $parcel['id']]);
+
+                return $this->redirect($labelUrl);
+            }
+        } catch (\Throwable $e) {
+            $this->addFlash('error', $this->trans(
+                'Failed to retrieve label from carrier: %msg%',
+                ['%msg%' => $e->getMessage()],
+                'Modules.Dzcarriermanager.Admin'
+            ));
+
+            return $this->redirectToRoute('ps_dzcarriermanager_parcel_index');
+        }
+
+        // 3. Label not available from any source
+        $this->addFlash(
+            'warning',
+            $this->trans(
+                'Label not yet available from the carrier for order #%id%.',
+                ['%id%' => $orderId],
+                'Modules.Dzcarriermanager.Admin'
+            )
+        );
+
+        return $this->redirectToRoute('ps_dzcarriermanager_parcel_index');
     }
 
     // ════════════════════════════════════════════════════════════════

@@ -51,7 +51,7 @@ ps_dzcarriermanager_parcel_bulk_confirm:
 
 ps_dzcarriermanager_parcel_send:
     path: /dz-carrier-manager/parcels/{orderId}/send
-    methods: [POST]
+    methods: [GET, POST]
     defaults:
         _controller: 'Module\DzCarrierManager\Controller\Admin\ParcelController::sendToCarrierAction'
         _legacy_controller: 'AdminDzCarrierManagerParcels'
