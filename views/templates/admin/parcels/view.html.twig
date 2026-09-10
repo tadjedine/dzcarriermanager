@@ -38,7 +38,7 @@
 
                     <p>
                         <strong>{{ 'Total'|trans({}, 'Admin.Global') }}:</strong>
-                        {{ order.total_paid_tax_incl }} {{ order.id_currency == 1 ? 'DZD' : '' }}
+                        {{ order.total_paid_tax_incl|number_format(2, '.', '') }} {{ order.id_currency == 1 ? 'DZD' : '' }}
                     </p>
                     <p>
                         <strong>{{ 'Date'|trans({}, 'Admin.Global') }}:</strong>

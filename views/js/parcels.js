@@ -2,14 +2,14 @@
  * DZ Carrier Manager — Parcels grid initialization & enhancements.
  *
  * Handles:
- * - PS9 Grid component initialization (all extensions including bulk actions & filters)
+ * - PS9 Grid component initialization (bulk actions, filters, reset, sorting)
  * - Status badge rendering (color-coded by lifecycle phase)
  * - Delivery type badge rendering
  * - Duplicate tab bar removal
  */
 document.addEventListener('DOMContentLoaded', function () {
-    // ── 1. Initialize PS9 Grid Component ────────────────────────
-    initGrid();
+    // ── 1. Initialize PS9 Grid Component (exact PS9 pattern) ────
+    initPS9Grid();
 
     // ── 2. Apply custom badge styles ────────────────────────────
     applyStatusBadges();
@@ -42,110 +42,61 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 /**
- * Initialize the PS9 Grid component with all required extensions.
+ * Initialize the PS9 Grid component using the exact same pattern as PS9 core
+ * pages (e.g., customer.bundle.js, order.bundle.js).
  *
- * PS9 uses a Grid JS class that attaches extensions for bulk actions,
- * filters, sorting, etc. We need to instantiate it on our grid element.
+ * Uses: window.prestashop.component.Grid + GridExtensions
  */
-function initGrid() {
-    // Attempt 1: Use the prestashop.component API
-    try {
-        if (window.prestashop && window.prestashop.component) {
-            window.prestashop.component.initComponents(['Grid']);
-        }
-    } catch (e) {
-        console.warn('[DzCarrierManager] prestashop.component.initComponents failed:', e);
-    }
-
-    // Attempt 2: Manually initialize the Grid on our specific grid div
-    // This ensures all extensions (bulk actions, filters, etc.) are properly attached
+function initPS9Grid() {
+    // Small delay to ensure PS9's component registry is fully loaded
     setTimeout(function () {
-        initGridManual();
-    }, 300);
+        _doInitPS9Grid();
+    }, 100);
+
+    // Retry once more after a longer delay as a safety net
+    setTimeout(function () {
+        _doInitPS9Grid();
+    }, 800);
 }
 
-/**
- * Manual Grid initialization fallback.
- * Finds the grid div and initializes it with the PS9 Grid constructor + extensions.
- */
-function initGridManual() {
-    var gridDiv = document.querySelector('#dzcarriermanager_parcel_grid_panel');
+var _gridInitialized = false;
 
-    // If we can't find it by ID, try the generic grid panel
-    if (!gridDiv) {
-        gridDiv = document.querySelector('.js-grid');
-    }
-    if (!gridDiv) {
-        gridDiv = document.querySelector('[id$="_grid_panel"]');
-    }
-    if (!gridDiv) {
-        return;
-    }
+function _doInitPS9Grid() {
+    if (_gridInitialized) return;
 
     try {
-        // PS9 exposes Grid class and extensions in the global scope
-        // via the admin theme's JS bundles
-        var Grid = window.Grid || (window.prestashop && window.prestashop.component && window.prestashop.component.Grid);
-
-        if (typeof Grid === 'function') {
-            var grid = new Grid(gridDiv.dataset.gridId || 'dzcarriermanager_parcel');
-
-            // Attach all standard PS9 extensions
-            if (window.SortingExtension) grid.addExtension(new window.SortingExtension());
-            if (window.FiltersResetExtension) grid.addExtension(new window.FiltersResetExtension());
-            if (window.ReloadListExtension) grid.addExtension(new window.ReloadListExtension());
-            if (window.BulkActionCheckboxExtension) grid.addExtension(new window.BulkActionCheckboxExtension());
-            if (window.SubmitBulkActionExtension) grid.addExtension(new window.SubmitBulkActionExtension());
-            if (window.SubmitGridActionExtension) grid.addExtension(new window.SubmitGridActionExtension());
-            if (window.SubmitRowActionExtension) grid.addExtension(new window.SubmitRowActionExtension());
-            if (window.LinkRowActionExtension) grid.addExtension(new window.LinkRowActionExtension());
-            if (window.ColumnTogglingExtension) grid.addExtension(new window.ColumnTogglingExtension());
-            if (window.ExportToSqlManagerExtension) grid.addExtension(new window.ExportToSqlManagerExtension());
+        if (!window.prestashop || !window.prestashop.component) {
+            console.warn('[DzCarrierManager] prestashop.component not available yet');
+            return;
         }
+
+        var Grid = window.prestashop.component.Grid;
+        var Ext = window.prestashop.component.GridExtensions;
+
+        if (typeof Grid !== 'function' || !Ext) {
+            console.warn('[DzCarrierManager] Grid constructor or GridExtensions not found');
+            return;
+        }
+
+        // Initialize our grid exactly like PS9 core does
+        var grid = new Grid('dzcarriermanager_parcel');
+
+        // Add all standard extensions
+        if (Ext.ReloadListExtension) grid.addExtension(new Ext.ReloadListExtension());
+        if (Ext.ExportToSqlManagerExtension) grid.addExtension(new Ext.ExportToSqlManagerExtension());
+        if (Ext.FiltersResetExtension) grid.addExtension(new Ext.FiltersResetExtension());
+        if (Ext.SortingExtension) grid.addExtension(new Ext.SortingExtension());
+        if (Ext.BulkActionCheckboxExtension) grid.addExtension(new Ext.BulkActionCheckboxExtension());
+        if (Ext.SubmitBulkActionExtension) grid.addExtension(new Ext.SubmitBulkActionExtension());
+        if (Ext.SubmitGridActionExtension) grid.addExtension(new Ext.SubmitGridActionExtension());
+        if (Ext.SubmitRowActionExtension) grid.addExtension(new Ext.SubmitRowActionExtension());
+        if (Ext.LinkRowActionExtension) grid.addExtension(new Ext.LinkRowActionExtension());
+        if (Ext.ColumnTogglingExtension) grid.addExtension(new Ext.ColumnTogglingExtension());
+        if (Ext.FiltersSubmitButtonEnablerExtension) grid.addExtension(new Ext.FiltersSubmitButtonEnablerExtension());
+
+        _gridInitialized = true;
     } catch (e) {
-        console.warn('[DzCarrierManager] Manual Grid init failed:', e);
-    }
-
-    // Fallback: ensure bulk action dropdown is enabled when checkboxes are checked
-    enableBulkActionsFallback(gridDiv);
-}
-
-/**
- * Fallback mechanism to enable bulk actions when checkboxes are selected.
- * This handles cases where the Grid component fails to initialize properly.
- */
-function enableBulkActionsFallback(gridDiv) {
-    var bulkBtn = gridDiv.querySelector('.js-bulk-action-btn, .bulk-action-btn, [data-toggle="dropdown"]');
-    var checkboxes = gridDiv.querySelectorAll('input[type="checkbox"].js-bulk-action-checkbox, input.bulk-action-checkbox, tbody input[type="checkbox"]');
-    var selectAll = gridDiv.querySelector('.js-bulk-action-select-all, thead input[type="checkbox"]');
-
-    if (!bulkBtn || checkboxes.length === 0) {
-        return;
-    }
-
-    function updateBulkButton() {
-        var anyChecked = false;
-        checkboxes.forEach(function (cb) {
-            if (cb.checked) anyChecked = true;
-        });
-
-        if (anyChecked) {
-            bulkBtn.removeAttribute('disabled');
-            bulkBtn.classList.remove('disabled');
-        }
-    }
-
-    checkboxes.forEach(function (cb) {
-        cb.addEventListener('change', updateBulkButton);
-    });
-
-    if (selectAll) {
-        selectAll.addEventListener('change', function () {
-            checkboxes.forEach(function (cb) {
-                cb.checked = selectAll.checked;
-            });
-            updateBulkButton();
-        });
+        console.warn('[DzCarrierManager] Grid init error:', e);
     }
 }
 

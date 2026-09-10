@@ -132,6 +132,11 @@ class GuepexWebhookHandler
             return false;
         }
 
+        // Skip if the status hasn't actually changed (prevents duplicate entries)
+        if ($parcel['status'] === $status) {
+            return false;
+        }
+
         $updateFields = [
             'status' => $status,
             'status_changed_at' => $occurredAt,
@@ -206,6 +211,17 @@ class GuepexWebhookHandler
         }
 
         $db->update($prefix . 'cm_parcels', $updateFields, ['id' => $parcel['id']]);
+
+        // Skip inserting a duplicate history entry if the parcel already has history
+        // (the initial entry was already created by sendOrderToCarrier)
+        $existingHistory = $db->fetchOne(
+            "SELECT COUNT(*) FROM `{$prefix}cm_parcel_histories` WHERE `parcel_id` = :parcelId",
+            ['parcelId' => (int) $parcel['id']]
+        );
+
+        if ((int) $existingHistory > 0) {
+            return true;
+        }
 
         $db->insert($prefix . 'cm_parcel_histories', [
             'parcel_id' => (int) $parcel['id'],
