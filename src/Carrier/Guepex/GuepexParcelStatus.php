@@ -166,15 +166,33 @@ final class GuepexParcelStatus
     /**
      * Map Guepex status to PrestaShop order state ID.
      * Returns null when PS state should NOT be updated.
+     *
+     * Uses custom DZ order states from ps_configuration (installed by the module).
+     * Falls back to PS built-in states if custom states aren't available.
      */
     public static function toPrestashopState(string $status): ?int
     {
-        return match ($status) {
-            self::RAMASSE, self::EXPEDIE => 4,  // Shipped
-            self::LIVRE                  => 5,  // Delivered
-            self::ANNULE                 => 6,  // Canceled
-            default                      => null,
+        $phase = self::phase($status);
+
+        return match ($phase) {
+            'pending'    => self::resolveState('DZ_CM_STATE_NOT_CONFIRMED', null),
+            'processing' => self::resolveState('DZ_CM_STATE_BEING_PREPARED', 3),
+            'shipping'   => self::resolveState('DZ_CM_STATE_SHIPPED', 4),
+            'delivered'  => self::resolveState('DZ_CM_STATE_DELIVERED', 5),
+            'failed'     => self::resolveState('DZ_CM_STATE_FAILED_DELIVERY', 6),
+            'returned'   => self::resolveState('DZ_CM_STATE_RETURNED', 6),
+            default      => null,
         };
+    }
+
+    /**
+     * Resolve a custom DZ state ID, falling back to a PS built-in state.
+     */
+    private static function resolveState(string $configKey, ?int $fallback): ?int
+    {
+        $stateId = \Module\DzCarrierManager\Database\OrderStateInstaller::getStateId($configKey);
+
+        return $stateId ?? $fallback;
     }
 
     /**

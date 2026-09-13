@@ -28,35 +28,35 @@ class ModuleInstaller
     public function createTables(): array
     {
         $errors = [];
-        $sqlFile = dirname(__DIR__, 2) . '/Resources/data/install.sql';
+        $sqlFiles = [
+            dirname(__DIR__, 2) . '/Resources/data/install.sql',
+            dirname(__DIR__, 2) . '/Resources/data/locations.sql',
+        ];
 
-        if (!file_exists($sqlFile)) {
-            $errors[] = [
-                'key' => 'SQL install file not found: ' . $sqlFile,
-                'parameters' => [],
-                'domain' => 'Admin.Modules.Notification',
-            ];
-            return $errors;
-        }
-
-        $sqlContent = file_get_contents($sqlFile);
-        $sqlQueries = preg_split('/\r\n|\r|\n/', $sqlContent);
-        $sqlQueries = str_replace('PREFIX_', $this->dbPrefix, $sqlQueries);
-
-        foreach ($sqlQueries as $query) {
-            $query = trim($query);
-            if (empty($query)) {
+        foreach ($sqlFiles as $sqlFile) {
+            if (!file_exists($sqlFile)) {
                 continue;
             }
 
-            try {
-                $this->connection->executeStatement($query);
-            } catch (DBALException $e) {
-                $errors[] = [
-                    'key' => $e->getMessage(),
-                    'parameters' => [],
-                    'domain' => 'Admin.Modules.Notification',
-                ];
+            $sqlContent = file_get_contents($sqlFile);
+            $sqlQueries = preg_split('/\r\n|\r|\n/', $sqlContent);
+            $sqlQueries = str_replace('PREFIX_', $this->dbPrefix, $sqlQueries);
+
+            foreach ($sqlQueries as $query) {
+                $query = trim($query);
+                if (empty($query)) {
+                    continue;
+                }
+
+                try {
+                    $this->connection->executeStatement($query);
+                } catch (DBALException $e) {
+                    $errors[] = [
+                        'key' => $e->getMessage(),
+                        'parameters' => [],
+                        'domain' => 'Admin.Modules.Notification',
+                    ];
+                }
             }
         }
 
@@ -71,11 +71,14 @@ class ModuleInstaller
     public function dropTables(): array
     {
         $errors = [];
-        // Order matters: histories has FK to parcels
+        // Order matters: histories has FK to parcels, centers references communes
         $tables = [
             'cm_parcel_histories',
             'cm_parcels',
             'cm_carrier_accounts',
+            'cm_centers',
+            'cm_communes',
+            'cm_wilayas',
         ];
 
         foreach ($tables as $table) {

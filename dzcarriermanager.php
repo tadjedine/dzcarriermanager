@@ -12,6 +12,7 @@
 declare(strict_types=1);
 
 use Module\DzCarrierManager\Database\ModuleInstaller;
+use Module\DzCarrierManager\Database\OrderStateInstaller;
 
 if (!defined('_PS_VERSION_')) {
     exit;
@@ -98,6 +99,7 @@ class dzcarriermanager extends Module
     public function install(): bool
     {
         return $this->installTables()
+            && $this->installOrderStates()
             && parent::install()
             && $this->registerHook('displayAdminOrderTabLink')
             && $this->registerHook('displayAdminOrderTabContent')
@@ -109,6 +111,7 @@ class dzcarriermanager extends Module
      */
     public function uninstall(): bool
     {
+        $this->uninstallOrderStates();
         return $this->removeTables() && parent::uninstall();
     }
 
@@ -291,6 +294,33 @@ class dzcarriermanager extends Module
         }
 
         return $installer;
+    }
+
+    private function getOrderStateInstaller(): OrderStateInstaller
+    {
+        return new OrderStateInstaller(
+            $this->get('doctrine.dbal.default_connection'),
+            $this->getContainer()->getParameter('database_prefix')
+        );
+    }
+
+    private function installOrderStates(): bool
+    {
+        try {
+            $errors = $this->getOrderStateInstaller()->installStates();
+            return empty($errors);
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    private function uninstallOrderStates(): void
+    {
+        try {
+            $this->getOrderStateInstaller()->uninstallStates();
+        } catch (\Throwable) {
+            // Best effort — don't block uninstall
+        }
     }
 }
 

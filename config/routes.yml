@@ -139,3 +139,11 @@ ps_dzcarriermanager_carrier_test:
     requirements:
         id: \d+
 
+ps_dzcarriermanager_carrier_sync_locations:
+    path: /dz-carrier-manager/carriers/sync-locations
+    methods: [POST]
+    defaults:
+        _controller: 'Module\DzCarrierManager\Controller\Admin\CarrierAccountController::syncLocationsAction'
+        _legacy_controller: 'AdminDzCarrierManagerCarriers'
+        _legacy_link: 'AdminDzCarrierManagerCarriers:synclocations'
+

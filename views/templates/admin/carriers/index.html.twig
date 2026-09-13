@@ -6,6 +6,35 @@
 
 {% block content %}
     <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <h3 class="card-header">
+                    <i class="material-icons">sync</i> {{ 'Location Data Sync'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                </h3>
+                <div class="card-body">
+                    <p>
+                        {{ 'Sync wilayas, communes, and centers from the carrier API to the local database to improve checkout performance.'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                    </p>
+                    <ul class="list-unstyled">
+                        <li><strong>{{ 'Last Synced:'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</strong> <span id="last-sync-date" class="badge badge-info">{{ lastSync ? lastSync|date('Y-m-d H:i') : 'Never' }}</span></li>
+                        <li><strong>{{ 'Wilayas:'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</strong> <span id="wilaya-count" class="badge badge-success">{{ wilayaCount }}</span></li>
+                        <li><strong>{{ 'Communes:'|trans({}, 'Modules.Dzcarriermanager.Admin') }}</strong> <span id="commune-count" class="badge badge-success">{{ communeCount }}</span></li>
+                    </ul>
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-primary" id="btn-sync-locations" type="button">
+                        <i class="material-icons">cloud_download</i> {{ 'Sync Locations Now'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                    </button>
+                    <span id="sync-spinner" class="ml-2 text-primary" style="display: none;">
+                        <i class="material-icons rotating">autorenew</i> {{ 'Syncing data, this might take a minute...'|trans({}, 'Modules.Dzcarriermanager.Admin') }}
+                    </span>
+                    <div id="sync-message" class="mt-2" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-3">
         <div class="col">
             {% include '@PrestaShop/Admin/Common/Grid/grid_panel.html.twig' with {'grid': carrierGrid} %}
         </div>
@@ -22,7 +51,54 @@
     <script src="{{ asset('themes/default/js/bundle/pagination.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            window.prestashop.component.initComponents(['Grid']);
+            try {
+                const btnSync = document.getElementById('btn-sync-locations');
+                const spinner = document.getElementById('sync-spinner');
+                const message = document.getElementById('sync-message');
+
+                if (btnSync) {
+                    btnSync.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        btnSync.disabled = true;
+                        spinner.style.display = 'inline-block';
+                        message.style.display = 'none';
+
+                        fetch('{{ path("ps_dzcarriermanager_carrier_sync_locations") }}', {
+                            method: 'POST',
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                            }
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            message.style.display = 'block';
+                            if (data.success) {
+                                message.innerHTML = '<div class="alert alert-success">' + data.message + '</div>';
+                                setTimeout(() => { location.reload(); }, 2000);
+                            } else {
+                                message.innerHTML = '<div class="alert alert-danger">' + data.message + '</div>';
+                                btnSync.disabled = false;
+                            }
+                        })
+                        .catch(error => {
+                            message.style.display = 'block';
+                            message.innerHTML = '<div class="alert alert-danger">An unexpected error occurred. Check network logs.</div>';
+                            btnSync.disabled = false;
+                        })
+                        .finally(() => {
+                            spinner.style.display = 'none';
+                        });
+                    });
+                }
+            } catch (err) {
+                console.error('Error initializing sync button:', err);
+            }
+
+            try {
+                window.prestashop.component.initComponents(['Grid']);
+            } catch (err) {
+                console.warn('PrestaShop Grid component not found.');
+            }
         });
     </script>
 {% endblock %}

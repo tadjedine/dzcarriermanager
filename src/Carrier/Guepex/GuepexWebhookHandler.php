@@ -155,6 +155,34 @@ class GuepexWebhookHandler
 
         $db->update($prefix . 'cm_parcels', $updateFields, ['id' => $parcel['id']]);
 
+        // Update PrestaShop order state to keep BO stats in sync
+        $psStateId = GuepexParcelStatus::toPrestashopState($status);
+        if ($psStateId !== null && !empty($parcel['order_id'])) {
+            $currentPsState = $db->fetchOne(
+                "SELECT current_state FROM `{$prefix}orders` WHERE id_order = :orderId",
+                ['orderId' => (int) $parcel['order_id']]
+            );
+
+            if ($currentPsState !== false && (int) $currentPsState !== $psStateId) {
+                $db->update(
+                    $prefix . 'orders',
+                    [
+                        'current_state' => $psStateId,
+                        'date_upd'      => date('Y-m-d H:i:s'),
+                    ],
+                    ['id_order' => (int) $parcel['order_id']]
+                );
+
+                // Insert PS order history entry
+                $db->insert($prefix . 'order_history', [
+                    'id_order'       => (int) $parcel['order_id'],
+                    'id_order_state' => $psStateId,
+                    'id_employee'    => 0,
+                    'date_add'       => date('Y-m-d H:i:s'),
+                ]);
+            }
+        }
+
         // Insert history record
         $db->insert($prefix . 'cm_parcel_histories', [
             'parcel_id' => (int) $parcel['id'],

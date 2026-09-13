@@ -34,12 +34,23 @@ class CarrierAccountController extends PrestaShopAdminController
         #[Autowire(service: 'prestashop.module.dzcarriermanager.grid.factory.carrier_accounts')]
         GridFactoryInterface $gridFactory,
     ): Response {
+        $prefix = $this->getDbPrefix();
+        $lastSync = $this->connection->fetchOne(
+            "SELECT value FROM `{$prefix}configuration` WHERE name = 'DZ_CM_LOCATIONS_LAST_SYNC'"
+        );
+
+        $wilayaCount = $this->connection->fetchOne("SELECT COUNT(*) FROM `{$prefix}cm_wilayas`");
+        $communeCount = $this->connection->fetchOne("SELECT COUNT(*) FROM `{$prefix}cm_communes`");
+
         return $this->render(
             '@Modules/dzcarriermanager/views/templates/admin/carriers/index.html.twig',
             [
                 'enableSidebar' => true,
                 'layoutTitle' => $this->trans('My Carriers', [], 'Modules.Dzcarriermanager.Admin'),
                 'carrierGrid' => $this->presentGrid($gridFactory->getGrid($filters)),
+                'lastSync' => $lastSync,
+                'wilayaCount' => (int) $wilayaCount,
+                'communeCount' => (int) $communeCount,
             ]
         );
     }
@@ -261,5 +272,51 @@ class CarrierAccountController extends PrestaShopAdminController
     {
         return $this->connection->getParams()['driverOptions']['prefix']
             ?? $this->getParameter('database_prefix');
+    }
+
+    /**
+     * Trigger location sync via Laravel artisan command.
+     */
+    public function syncLocationsAction(): JsonResponse
+    {
+        // The Guepex API sync involves over 100 HTTP requests and takes ~1-2 minutes.
+        set_time_limit(0);
+        
+        try {
+            $laravelPath = dirname(__DIR__, 6) . '/laravel-api'; // c:\laragon\www\laravel-api
+            
+            if (!is_dir($laravelPath)) {
+                return new JsonResponse([
+                    'success' => false,
+                    'message' => 'Laravel API directory not found at: ' . $laravelPath,
+                ]);
+            }
+
+            $output = [];
+            $returnCode = 0;
+            $phpBinary = escapeshellarg(PHP_BINARY);
+            $cmd = 'cd ' . escapeshellarg($laravelPath) . ' && ' . $phpBinary . ' artisan carrier:sync-locations 2>&1';
+            exec($cmd, $output, $returnCode);
+
+            if ($returnCode === 0) {
+                return new JsonResponse([
+                    'success' => true,
+                    'message' => 'Location sync completed successfully.',
+                    'output' => implode("\n", $output),
+                ]);
+            }
+
+            $outputStr = implode("\n", $output);
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Failed to sync locations. Output: ' . $outputStr,
+                'output' => $outputStr,
+            ], 200);
+        } catch (\Throwable $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Sync error: ' . $e->getMessage(),
+            ], 200);
+        }
     }
 }
